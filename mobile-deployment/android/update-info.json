@@ -1,0 +1,21 @@
+{
+  "currentVersion": "1.0.0",
+  "platforms": {
+    "android": {
+      "version": "1.0.0",
+      "buildNumber": "1",
+      "isRequired": false,
+      "size": "45MB",
+      "downloadUrl": "https://play.google.com/store/apps/details?id=com.proximity.dating",
+      "changelog": [
+        "Initial release",
+        "Modern dating app interface",
+        "Real-time messaging with Socket.IO",
+        "Location-based matching",
+        "Push notifications",
+        "Profile verification",
+        "Ad-supported free access model"
+      ]
+    }
+  }
+}

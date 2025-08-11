@@ -1,0 +1,332 @@
+{
+  "appName": "Proximity Dating",
+  "bundleId": "com.proximity.dating",
+  "version": "1.0.0",
+  "buildNumber": "1",
+  "description": "Modern dating app with real-time messaging and location-based matching",
+  "author": "Proximity Team",
+  "website": "https://proximity-dating.com",
+  "support": "support@proximity-dating.com",
+  
+  "platforms": {
+    "android": {
+      "packageName": "com.proximity.dating",
+      "versionCode": 1,
+      "minSdkVersion": 21,
+      "targetSdkVersion": 33,
+      "compileSdkVersion": 33,
+      "buildToolsVersion": "33.0.0",
+      "permissions": [
+        "android.permission.INTERNET",
+        "android.permission.ACCESS_NETWORK_STATE",
+        "android.permission.ACCESS_WIFI_STATE",
+        "android.permission.CAMERA",
+        "android.permission.READ_EXTERNAL_STORAGE",
+        "android.permission.WRITE_EXTERNAL_STORAGE",
+        "android.permission.ACCESS_FINE_LOCATION",
+        "android.permission.ACCESS_COARSE_LOCATION",
+        "android.permission.RECORD_AUDIO",
+        "android.permission.MODIFY_AUDIO_SETTINGS",
+        "android.permission.VIBRATE",
+        "android.permission.WAKE_LOCK",
+        "android.permission.FOREGROUND_SERVICE",
+        "android.permission.POST_NOTIFICATIONS",
+        "android.permission.READ_MEDIA_IMAGES",
+        "android.permission.READ_MEDIA_VIDEO",
+        "android.permission.READ_MEDIA_AUDIO"
+      ],
+      "features": [
+        "android.hardware.camera",
+        "android.hardware.camera.autofocus",
+        "android.hardware.location",
+        "android.hardware.location.gps",
+        "android.hardware.microphone"
+      ],
+      "services": [
+        {
+          "name": "ProximityFirebaseMessagingService",
+          "enabled": true
+        },
+        {
+          "name": "ProximityLocationService",
+          "enabled": true
+        }
+      ],
+      "deepLinks": [
+        {
+          "scheme": "proximity",
+          "host": "dating",
+          "pathPrefix": "/"
+        }
+      ],
+      "appStoreUrl": "https://play.google.com/store/apps/details?id=com.proximity.dating",
+      "size": "45MB",
+      "supportedArchitectures": ["arm64-v8a", "armeabi-v7a", "x86_64", "x86"]
+    },
+    "ios": {
+      "bundleIdentifier": "com.proximity.dating",
+      "version": "1.0.0",
+      "buildNumber": "1",
+      "deploymentTarget": "14.0",
+      "capabilities": {
+        "pushNotifications": true,
+        "backgroundModes": ["fetch", "processing", "remote-notification"],
+        "iCloud": true,
+        "keychainSharing": true
+      },
+      "entitlements": {
+        "aps-environment": "development",
+        "com.apple.developer.aps-environment": "development",
+        "com.apple.developer.networking.wifi-info": true,
+        "com.apple.developer.corelocation.allow": true,
+        "com.apple.developer.usernotifications.time-sensitive": true,
+        "com.apple.developer.usernotifications.filtering": true
+      },
+      "infoPlist": {
+        "NSCameraUsageDescription": "Proximity needs access to your camera to take profile photos and verify your identity.",
+        "NSLocationWhenInUseUsageDescription": "Proximity needs access to your location to find matches near you.",
+        "NSLocationAlwaysAndWhenInUseUsageDescription": "Proximity needs access to your location to provide real-time proximity matching.",
+        "NSMicrophoneUsageDescription": "Proximity needs access to your microphone for voice messages and video calls.",
+        "NSPhotoLibraryUsageDescription": "Proximity needs access to your photo library to upload profile pictures.",
+        "NSPhotoLibraryAddUsageDescription": "Proximity needs access to save photos to your library.",
+        "NSUserNotificationsUsageDescription": "Proximity sends notifications about new matches, messages, and updates.",
+        "UIBackgroundModes": [
+          "fetch",
+          "processing",
+          "remote-notification"
+        ],
+        "UISupportedInterfaceOrientations": [
+          "UIInterfaceOrientationPortrait",
+          "UIInterfaceOrientationLandscapeLeft",
+          "UIInterfaceOrientationLandscapeRight"
+        ],
+        "UIViewControllerBasedStatusBarAppearance": true,
+        "UIRequiresPersistentWiFi": true,
+        "UIAppFonts": [
+          "Inter-Regular.ttf",
+          "Inter-Bold.ttf",
+          "Inter-SemiBold.ttf"
+        ]
+      },
+      "appStoreUrl": "https://apps.apple.com/app/proximity-dating/id1234567890",
+      "size": "52MB",
+      "supportedDevices": [
+        "iPhone 6s",
+        "iPhone 6s Plus",
+        "iPhone 7",
+        "iPhone 7 Plus",
+        "iPhone 8",
+        "iPhone 8 Plus",
+        "iPhone X",
+        "iPhone XS",
+        "iPhone XS Max",
+        "iPhone XR",
+        "iPhone 11",
+        "iPhone 11 Pro",
+        "iPhone 11 Pro Max",
+        "iPhone 12 mini",
+        "iPhone 12",
+        "iPhone 12 Pro",
+        "iPhone 12 Pro Max",
+        "iPhone 13 mini",
+        "iPhone 13",
+        "iPhone 13 Pro",
+        "iPhone 13 Pro Max",
+        "iPhone 14",
+        "iPhone 14 Plus",
+        "iPhone 14 Pro",
+        "iPhone 14 Pro Max",
+        "iPhone 15",
+        "iPhone 15 Plus",
+        "iPhone 15 Pro",
+        "iPhone 15 Pro Max"
+      ]
+    }
+  },
+  
+  "features": {
+    "pushNotifications": {
+      "enabled": true,
+      "providers": {
+        "firebase": {
+          "apiKey": "your-firebase-api-key",
+          "authDomain": "your-project.firebaseapp.com",
+          "projectId": "your-project-id",
+          "storageBucket": "your-project.appspot.com",
+          "messagingSenderId": "your-messaging-sender-id",
+          "appId": "your-app-id",
+          "measurementId": "your-measurement-id"
+        }
+      },
+      "types": [
+        "match",
+        "message",
+        "like",
+        "system",
+        "promotional"
+      ]
+    },
+    "location": {
+      "enabled": true,
+      "accuracy": "high",
+      "updateInterval": 30000,
+      "backgroundUpdates": true
+    },
+    "camera": {
+      "enabled": true,
+      "features": [
+        "profilePhotos",
+        "verification",
+        "videoMessages"
+      ]
+    },
+    "storage": {
+      "enabled": true,
+      "providers": {
+        "firebase": {
+          "storageBucket": "your-project.appspot.com"
+        }
+      }
+    },
+    "analytics": {
+      "enabled": true,
+      "providers": {
+        "firebase": {
+          "measurementId": "your-measurement-id"
+        }
+      }
+    },
+    "crashReporting": {
+      "enabled": true,
+      "providers": {
+        "firebase": true
+      }
+    },
+    "offline": {
+      "enabled": true,
+      "features": [
+        "messageSync",
+        "profileCache",
+        "matchCache"
+      ]
+    }
+  },
+  
+  "deployment": {
+    "environments": {
+      "development": {
+        "apiUrl": "http://localhost:3001/api",
+        "socketUrl": "http://localhost:3002",
+        "environment": "development",
+        "debug": true
+      },
+      "staging": {
+        "apiUrl": "https://staging-api.proximity-dating.com/api",
+        "socketUrl": "https://staging-socket.proximity-dating.com",
+        "environment": "staging",
+        "debug": true
+      },
+      "production": {
+        "apiUrl": "https://api.proximity-dating.com/api",
+        "socketUrl": "https://socket.proximity-dating.com",
+        "environment": "production",
+        "debug": false
+      }
+    }
+  },
+  
+  "security": {
+    "sslPinning": {
+      "enabled": true,
+      "domains": [
+        "api.proximity-dating.com",
+        "socket.proximity-dating.com"
+      ]
+    },
+    "dataEncryption": {
+      "enabled": true,
+      "algorithm": "AES-256"
+    },
+    "biometricAuth": {
+      "enabled": true,
+      "fallbackToPin": true
+    }
+  },
+  
+  "monetization": {
+    "ads": {
+      "enabled": true,
+      "providers": {
+        "googleAdMob": {
+          "appId": "ca-app-pub-xxxxxxxxxxxxxxxx",
+          "bannerAdUnitId": "ca-app-pub-xxxxxxxxxxxxxxxx/xxxxxxxxxx",
+          "interstitialAdUnitId": "ca-app-pub-xxxxxxxxxxxxxxxx/xxxxxxxxxx",
+          "rewardedAdUnitId": "ca-app-pub-xxxxxxxxxxxxxxxx/xxxxxxxxxx"
+        }
+      },
+      "adTypes": [
+        "banner",
+        "interstitial",
+        "rewarded",
+        "native"
+      ]
+    },
+    "inAppPurchases": {
+      "enabled": true,
+      "products": [
+        {
+          "id": "premium_monthly",
+          "type": "subscription",
+          "price": "9.99",
+          "currency": "USD",
+          "duration": "P1M",
+          "features": [
+            "unlimited_swipes",
+            "unlimited_likes",
+            "see_who_liked_you",
+            "boost_profile",
+            "super_likes",
+            "passport_mode",
+            "ad_free"
+          ]
+        },
+        {
+          "id": "premium_yearly",
+          "type": "subscription",
+          "price": "59.99",
+          "currency": "USD",
+          "duration": "P1Y",
+          "features": [
+            "unlimited_swipes",
+            "unlimited_likes",
+            "see_who_liked_you",
+            "boost_profile",
+            "super_likes",
+            "passport_mode",
+            "ad_free"
+          ]
+        },
+        {
+          "id": "boost",
+          "type": "consumable",
+          "price": "4.99",
+          "currency": "USD",
+          "duration": "PT30M",
+          "features": [
+            "boost_profile"
+          ]
+        },
+        {
+          "id": "super_likes",
+          "type": "consumable",
+          "price": "0.99",
+          "currency": "USD",
+          "quantity": 1,
+          "features": [
+            "super_like"
+          ]
+        }
+      ]
+    }
+  }
+}

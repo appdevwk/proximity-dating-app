@@ -1,0 +1,411 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id              String   @id @default(cuid())
+  email           String   @unique
+  emailVerified   Boolean  @default(false)
+  name            String?
+  password        String
+  ageVerified     Boolean  @default(false)
+  isActive        Boolean  @default(true)
+  isBanned        Boolean  @default(false)
+  lastLogin       DateTime?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  // Relations
+  profile         Profile?
+  preferences     Preferences?
+  sentMessages    Message[] @relation("SentMessages")
+  receivedMessages Message[] @relation("ReceivedMessages")
+  sentReports     Report[] @relation("Reporter")
+  receivedReports Report[] @relation("Reported")
+  verification    Verification?
+  matchesAsUser1  Match[] @relation("User1Matches")
+  matchesAsUser2  Match[] @relation("User2Matches")
+  blocksAsBlocker Block[] @relation("Blocker")
+  blocksAsBlocked Block[] @relation("Blocked")
+  media           Media[]
+  adSessions      AdSession[]
+  adViews         AdView[]
+  payments        Payment[]
+  devices         Device[]
+  pushNotifications PushNotification[]
+
+  @@map("users")
+}
+
+model Profile {
+  id             String   @id @default(cuid())
+  userId         String   @unique
+  externalId     String?  @unique // For tracking external source profiles
+  displayName    String
+  bio            String?
+  dateOfBirth    DateTime
+  gender         Gender
+  interestedIn   String   // Comma-separated Gender values
+  location       String?
+  latitude       Float?
+  longitude      Float?
+  profilePicture String?
+  isProfilePublic Boolean @default(true)
+  showDistance   Boolean @default(true)
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  // Relations
+  user           User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("profiles")
+}
+
+model Preferences {
+  id            String   @id @default(cuid())
+  userId        String   @unique
+  minAge        Int      @default(18)
+  maxAge        Int      @default(100)
+  maxDistance   Int      @default(50) // in miles
+  interestedIn  String   // Comma-separated Gender values
+  relationshipType String // Comma-separated RelationshipType values
+  lookingFor    String?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  // Relations
+  user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("preferences")
+}
+
+model Message {
+  id        String   @id @default(cuid())
+  content   String
+  senderId  String
+  receiverId String
+  isRead    Boolean  @default(false)
+  isDeleted Boolean  @default(false)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relations
+  sender    User     @relation("SentMessages", fields: [senderId], references: [id], onDelete: Cascade)
+  receiver  User     @relation("ReceivedMessages", fields: [receiverId], references: [id], onDelete: Cascade)
+
+  @@map("messages")
+}
+
+model Report {
+  id          String       @id @default(cuid())
+  reporterId  String
+  reportedId  String
+  reason      ReportReason
+  description String?
+  status      ReportStatus @default(PENDING)
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+
+  // Relations
+  reporter    User         @relation("Reporter", fields: [reporterId], references: [id], onDelete: Cascade)
+  reported    User         @relation("Reported", fields: [reportedId], references: [id], onDelete: Cascade)
+
+  @@map("reports")
+}
+
+model Verification {
+  id          String           @id @default(cuid())
+  userId      String           @unique
+  documentType VerificationType
+  documentUrl String?
+  facialData   String?          // Base64 encoded facial recognition data
+  biometricData String?        // Base64 encoded biometric data (fingerprint, etc.)
+  faceVerified Boolean         @default(false)
+  biometricVerified Boolean    @default(false)
+  status      VerificationStatus @default(PENDING)
+  verifiedAt  DateTime?
+  createdAt   DateTime         @default(now())
+  updatedAt   DateTime         @updatedAt
+
+  // Relations
+  user        User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("verifications")
+}
+
+model Match {
+  id          String      @id @default(cuid())
+  user1Id     String
+  user2Id     String
+  status      MatchStatus @default(PENDING)
+  user1Action MatchAction?
+  user2Action MatchAction?
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+
+  // Relations
+  user1       User        @relation("User1Matches", fields: [user1Id], references: [id], onDelete: Cascade)
+  user2       User        @relation("User2Matches", fields: [user2Id], references: [id], onDelete: Cascade)
+
+  @@unique([user1Id, user2Id])
+  @@map("matches")
+}
+
+model Block {
+  id        String   @id @default(cuid())
+  blockerId String
+  blockedId String
+  reason    String?
+  createdAt DateTime @default(now())
+
+  // Relations
+  blocker   User     @relation("Blocker", fields: [blockerId], references: [id], onDelete: Cascade)
+  blocked   User     @relation("Blocked", fields: [blockedId], references: [id], onDelete: Cascade)
+
+  @@unique([blockerId, blockedId])
+  @@map("blocks")
+}
+
+model Media {
+  id        String      @id @default(cuid())
+  userId    String
+  url       String
+  type      MediaType
+  isPublic  Boolean     @default(true)
+  isApproved Boolean    @default(false)
+  createdAt DateTime    @default(now())
+  updatedAt DateTime    @updatedAt
+
+  // Relations
+  user      User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("media")
+}
+
+// Enums
+enum Gender {
+  MALE
+  FEMALE
+  NON_BINARY
+  OTHER
+}
+
+enum RelationshipType {
+  CASUAL
+  SERIOUS
+  FRIENDSHIP
+  MARRIAGE
+  SUGAR_DATING
+  NSFW
+}
+
+enum ReportReason {
+  INAPPROPRIATE_CONTENT
+  HARASSMENT
+  SPAM
+  UNDERAGE
+  FAKE_PROFILE
+  SCAM
+  OTHER
+}
+
+enum ReportStatus {
+  PENDING
+  REVIEWING
+  RESOLVED
+  DISMISSED
+}
+
+enum VerificationType {
+  DRIVERS_LICENSE
+  PASSPORT
+  ID_CARD
+  SELFIE
+}
+
+enum VerificationStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+enum MatchStatus {
+  PENDING
+  ACCEPTED
+  REJECTED
+  EXPIRED
+}
+
+enum MatchAction {
+  LIKED
+  DISLIKED
+  SUPER_LIKED
+}
+
+enum MediaType {
+  PROFILE_PICTURE
+  GALLERY_IMAGE
+  VIDEO
+}
+
+// Ad Monetization Models
+model AdSession {
+  id        String   @id @default(cuid())
+  userId    String
+  sessionId String   @unique
+  purpose   SessionPurpose
+  status    SessionStatus @default(ACTIVE)
+  adsRequired Int     @default(2)
+  adsWatched Int     @default(0)
+  completed Boolean  @default(false)
+  expiresAt DateTime?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relations
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  adViews   AdView[]
+
+  @@map("ad_sessions")
+}
+
+model AdView {
+  id          String   @id @default(cuid())
+  userId      String
+  sessionId   String
+  adId        String
+  adProvider  String
+  adType      AdType
+  duration    Int      // in seconds
+  reward      Float    // credit amount
+  completed   Boolean  @default(false)
+  watchedAt   DateTime?
+  createdAt   DateTime @default(now())
+
+  // Relations
+  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  session     AdSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+
+  @@map("ad_views")
+}
+
+model Payment {
+  id          String        @id @default(cuid())
+  userId      String
+  amount      Float
+  currency    String        @default("USD")
+  status      PaymentStatus @default(PENDING)
+  provider    String        @default("AD_CREDITS")
+  description String?
+  metadata    String?
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+
+  // Relations
+  user        User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("payments")
+}
+
+// Enums for Ad System
+enum SessionPurpose {
+  LOGIN
+  PREMIUM_FEATURE
+  EXTRA_SWIPES
+  BOOST_PROFILE
+  SUPER_LIKE
+}
+
+enum SessionStatus {
+  ACTIVE
+  COMPLETED
+  EXPIRED
+  CANCELLED
+}
+
+enum AdType {
+  VIDEO
+  INTERSTITIAL
+  BANNER
+  REWARDED
+  PLAYABLE
+}
+
+enum PaymentStatus {
+  PENDING
+  COMPLETED
+  FAILED
+  REFUNDED
+}
+
+// Mobile App Models
+model Device {
+  id                    String   @id @default(cuid())
+  deviceId              String   @unique
+  userId                String
+  platform              Platform
+  model                 String?
+  osVersion             String?
+  appVersion            String?
+  pushToken             String?
+  isNotificationsEnabled Boolean  @default(true)
+  lastActiveAt          DateTime @default(now())
+  createdAt             DateTime @default(now())
+  updatedAt             DateTime @updatedAt
+
+  // Relations
+  user                  User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("devices")
+}
+
+model AppVersion {
+  id           String   @id @default(cuid())
+  version      String
+  buildNumber  String
+  platform     Platform
+  releaseDate  DateTime @default(now())
+  isRequired   Boolean  @default(false)
+  changelog    String   // JSON string
+  downloadUrl  String
+  size         String   // e.g., "45MB"
+
+  @@unique([version, platform])
+  @@map("app_versions")
+}
+
+model PushNotification {
+  id        String   @id @default(cuid())
+  userId    String
+  title     String
+  body      String
+  data      String?  // JSON string
+  imageUrl  String?
+  sound     String?  @default("default")
+  badge     Int?
+  sentAt    DateTime @default(now())
+  readAt    DateTime?
+  createdAt DateTime @default(now())
+
+  // Relations
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("push_notifications")
+}
+
+// Enums for Mobile App
+enum Platform {
+  IOS
+  ANDROID
+}

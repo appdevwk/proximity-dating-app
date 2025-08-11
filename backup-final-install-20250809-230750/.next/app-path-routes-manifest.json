@@ -1,0 +1,19 @@
+{
+  "/_not-found/page": "/_not-found",
+  "/api/ads/session/route": "/api/ads/session",
+  "/api/ads/history/route": "/api/ads/history",
+  "/api/ads/status/route": "/api/ads/status",
+  "/api/auth/login/route": "/api/auth/login",
+  "/api/auth/complete-login/route": "/api/auth/complete-login",
+  "/api/ads/view/route": "/api/ads/view",
+  "/api/auth/register/route": "/api/auth/register",
+  "/api/health/route": "/api/health",
+  "/api/placeholder/[...path]/route": "/api/placeholder/[...path]",
+  "/api/verification/age/route": "/api/verification/age",
+  "/api/profiles/import/route": "/api/profiles/import",
+  "/favicon.ico/route": "/favicon.ico",
+  "/admin/page": "/admin",
+  "/page": "/",
+  "/dashboard/page": "/dashboard",
+  "/socket-demo/page": "/socket-demo"
+}
