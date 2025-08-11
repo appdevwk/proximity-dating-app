@@ -1,0 +1,95 @@
+PROXIMITY ONE-CLICK INSTALL & LAUNCH COMMANDS
+==============================================
+
+🚀 QUICK START (One Command):
+    bash INSTALL-RUN-NOW.sh
+
+📋 ALTERNATIVE COMMANDS:
+
+1. Simple Launch:
+    ./launch.sh
+
+2. Check Status:
+    ./status.sh
+
+3. Stop Services:
+    ./stop.sh
+
+4. Python Launcher:
+    python3 launch-proximity.py
+
+5. Full Installation:
+    ./install-proximity.sh install
+
+🌐 ACCESS URLS:
+    Local:    http://localhost:3001
+    Public:   https://[random-words].trycloudflare.com (auto-generated)
+
+🛠️ MANUAL SETUP (If scripts fail):
+
+1. Install Dependencies:
+    sudo apt update && sudo apt upgrade -y
+    curl -fsSL https://deb.nodesource.com/setup_18.x | sudo -E bash -
+    sudo apt-get install -y nodejs npm python3 curl
+
+2. Install Project:
+    npm install
+    npm run db:push    # If using Prisma
+    npm run db:generate # If using Prisma
+
+3. Setup Cloudflared:
+    curl -L https://github.com/cloudflare/cloudflared/releases/latest/download/cloudflared-linux-amd64.deb -o cloudflared.deb
+    ar x cloudflared.deb
+    tar xf data.tar.gz
+    chmod +x ./usr/bin/cloudflared
+    rm -f cloudflared.deb debian-binary control.tar.gz data.tar.gz
+
+4. Launch:
+    npm run dev &
+    ./usr/bin/cloudflared tunnel --url http://localhost:3001 &
+
+📊 SERVICE MANAGEMENT:
+
+Check Status:
+    ps aux | grep "node\|cloudflared"
+    curl -I http://localhost:3001
+
+View Logs:
+    tail -f nextjs.log
+    tail -f cloudflared.log
+
+Stop Services:
+    pkill -f "node\|cloudflared"
+
+Restart Services:
+    pkill -f "node\|cloudflared"
+    ./launch.sh
+
+🔍 TROUBLESHOOTING:
+
+Port 3001 in use:
+    lsof -i :3001
+    kill -9 [PID]
+
+Cloudflare not working:
+    ls -la ./usr/bin/cloudflared
+    chmod +x ./usr/bin/cloudflared
+
+Dependencies not installing:
+    npm cache clean --force
+    rm -rf node_modules package-lock.json
+    npm install
+
+📁 IMPORTANT FILES:
+    INSTALL-RUN-NOW.sh      - Complete one-click install & run
+    launch.sh              - Simple launch script
+    stop.sh                - Stop services script
+    status.sh              - Status check script
+    launch-proximity.py    - Python launcher
+    nextjs.log             - Next.js server logs
+    cloudflared.log        - Cloudflare tunnel logs
+    PROXIMITY-QUICK-START.md - Full documentation
+
+🎯 RECOMMENDED:
+    Use "bash INSTALL-RUN-NOW.sh" for complete one-click setup
+    This will install everything and launch your Proximity dating app!

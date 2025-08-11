@@ -1,0 +1,10 @@
+# Cloudflare Tunnel Configuration for PROXIMITY Dating App
+# Custom domain: proximitydatingapp.cloudflareaccess.com
+
+tunnel: <YOUR_TUNNEL_ID>
+credentials-file: ~/.cloudflared/<YOUR_TUNNEL_ID>.json
+
+ingress:
+  - hostname: proximitydatingapp.cloudflareaccess.com
+    service: http://localhost:3001
+  - service: http_status:404
