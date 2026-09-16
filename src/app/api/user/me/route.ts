@@ -19,7 +19,16 @@ const updateProfileSchema = z.object({
   gender: GENDER_ENUM.optional(),
   interestedIn: z.array(GENDER_ENUM).min(1).optional(),
   location: z.string().trim().max(120).nullable().optional(),
-  profilePicture: z.string().trim().url().max(500).nullable().optional(),
+  profilePicture: z
+    .string()
+    .trim()
+    .max(500)
+    .refine(
+      (value) => /^(\/(?!\/)|https?:\/\/)/.test(value),
+      { message: 'Profile picture must be a relative path or http(s) URL' }
+    )
+    .nullable()
+    .optional(),
 });
 
 const updatePreferencesSchema = z.object({
