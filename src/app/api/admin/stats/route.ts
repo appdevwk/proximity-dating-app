@@ -1,15 +1,18 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { NextResponse } from 'next/server';
 import { db } from '@/lib/db';
-import { getSessionUser } from '@/lib/auth';
+import { authorizeAdmin } from '@/lib/auth';
 import type { AdminStats } from '@/lib/types';
 
 export async function GET() {
-  try {
-    const session = await getSessionUser();
-    if (!session) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
+  const auth = await authorizeAdmin();
+  if (!auth.allowed) {
+    return NextResponse.json(
+      { error: auth.reason === 'UNAUTHENTICATED' ? 'Unauthorized' : 'Forbidden' },
+      { status: auth.reason === 'UNAUTHENTICATED' ? 401 : 403 }
+    );
+  }
 
+  try {
     const oneDayAgo = new Date(Date.now() - 24 * 60 * 60 * 1000);
 
     const [

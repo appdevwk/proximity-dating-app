@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db';
-import { getSessionUser } from '@/lib/auth';
+import { authorizeAdmin } from '@/lib/auth';
 import { z } from 'zod';
 
 const updateReportSchema = z.object({
@@ -10,11 +10,15 @@ const updateReportSchema = z.object({
 });
 
 export async function GET() {
+  const auth = await authorizeAdmin();
+  if (!auth.allowed) {
+    return NextResponse.json(
+      { error: auth.reason === 'UNAUTHENTICATED' ? 'Unauthorized' : 'Forbidden' },
+      { status: auth.reason === 'UNAUTHENTICATED' ? 401 : 403 }
+    );
+  }
+
   try {
-    const session = await getSessionUser();
-    if (!session) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
 
     const reports = await db.report.findMany({
       orderBy: { createdAt: 'desc' },
@@ -44,11 +48,15 @@ export async function GET() {
 }
 
 export async function PATCH(request: NextRequest) {
+  const auth = await authorizeAdmin();
+  if (!auth.allowed) {
+    return NextResponse.json(
+      { error: auth.reason === 'UNAUTHENTICATED' ? 'Unauthorized' : 'Forbidden' },
+      { status: auth.reason === 'UNAUTHENTICATED' ? 401 : 403 }
+    );
+  }
+
   try {
-    const session = await getSessionUser();
-    if (!session) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
 
     const body = await request.json().catch(() => ({}));
     const validated = updateReportSchema.parse(body);

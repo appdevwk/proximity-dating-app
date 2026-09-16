@@ -67,6 +67,7 @@ export async function POST(request: NextRequest) {
         id: true,
         email: true,
         name: true,
+        role: true,
         ageVerified: true,
         createdAt: true
       }
@@ -100,6 +101,7 @@ export async function POST(request: NextRequest) {
       id: user.id,
       email: user.email,
       name: user.name,
+      role: user.role ?? 'USER',
     });
 
     const response = NextResponse.json({

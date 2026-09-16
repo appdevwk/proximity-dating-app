@@ -12,7 +12,7 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/hooks/use-toast';
 import { useSession } from '@/hooks/use-session';
-import { Save, ArrowLeft, UserRound } from 'lucide-react';
+import { Save, ArrowLeft, UserRound, Upload } from 'lucide-react';
 import type { GenderValue, UserMe } from '@/lib/types';
 
 const GENDERS: GenderValue[] = ['MALE', 'FEMALE', 'NON_BINARY', 'OTHER'];
@@ -33,6 +33,7 @@ export default function ProfileEditPage() {
   const [interestedIn, setInterestedIn] = useState<GenderValue[]>([]);
   const [location, setLocation] = useState('');
   const [profilePicture, setProfilePicture] = useState('');
+  const [uploading, setUploading] = useState(false);
   const [relationshipType, setRelationshipType] = useState<string[]>([]);
   const [minAge, setMinAge] = useState(18);
   const [maxAge, setMaxAge] = useState(100);
@@ -78,6 +79,33 @@ export default function ProfileEditPage() {
     setRelationshipType((prev) =>
       prev.includes(value) ? prev.filter((item) => item !== value) : [...prev, value]
     );
+  };
+
+  const onUploadPhoto = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+    setUploading(true);
+    try {
+      const body = new FormData();
+      body.append('file', file);
+      const response = await fetch('/api/profiles/photo', { method: 'POST', body });
+      if (response.status === 401) {
+        router.replace('/');
+        return;
+      }
+      const data = (await response.json().catch(() => null)) as { url?: string; error?: string } | null;
+      if (response.ok && data?.url) {
+        setProfilePicture(data.url);
+        toast({ title: 'Photo uploaded', description: 'Your new profile picture is ready.' });
+      } else {
+        toast({ title: 'Upload failed', description: data?.error ?? 'Please try again.', variant: 'destructive' });
+      }
+    } catch {
+      toast({ title: 'Upload failed', description: 'Network error, please try again.', variant: 'destructive' });
+    } finally {
+      setUploading(false);
+      if (event.target) event.target.value = '';
+    }
   };
 
   const save = async () => {
@@ -248,14 +276,43 @@ export default function ProfileEditPage() {
             </div>
 
             <div className="space-y-2">
-              <Label className="text-gray-300">Profile Picture URL</Label>
-              <Input
-                value={profilePicture}
-                onChange={(event) => setProfilePicture(event.target.value)}
-                placeholder="https://…"
-                className="bg-gray-800 border-pink-950 text-white placeholder-gray-500"
-              />
-              <p className="text-xs text-gray-500">Link to an image you want as your profile photo.</p>
+              <Label className="text-gray-300">Profile Picture</Label>
+              <div className="flex items-center gap-4">
+                <div className="w-20 h-20 rounded-full overflow-hidden border border-pink-800 bg-gray-800 flex items-center justify-center shrink-0">
+                  {profilePicture ? (
+                    <img src={profilePicture} alt="Profile" className="w-full h-full object-cover" />
+                  ) : (
+                    <UserRound className="w-9 h-9 text-gray-600" />
+                  )}
+                </div>
+                <div className="flex-1 space-y-2">
+                  <div className="flex flex-wrap gap-2">
+                    <Label
+                      htmlFor="photo-upload"
+                      className="inline-flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium cursor-pointer transition-colors bg-gradient-to-r from-pink-600 to-purple-600 text-white hover:opacity-90"
+                    >
+                      {uploading ? 'Uploading…' : 'Upload photo'}
+                      <input
+                        id="photo-upload"
+                        type="file"
+                        accept="image/jpeg,image/png,image/webp,image/gif"
+                        className="hidden"
+                        disabled={uploading}
+                        onChange={onUploadPhoto}
+                      />
+                    </Label>
+                    <Input
+                      value={profilePicture}
+                      onChange={(event) => setProfilePicture(event.target.value)}
+                      placeholder="…or paste an image URL"
+                      className="bg-gray-800 border-pink-950 text-white placeholder-gray-500"
+                    />
+                  </div>
+                  <p className="text-xs text-gray-500">
+                    JPG, PNG, WebP or GIF up to 5 MB. Stored on our server.
+                  </p>
+                </div>
+              </div>
             </div>
 
             <div className="space-y-2">

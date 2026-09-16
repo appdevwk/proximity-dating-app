@@ -12,6 +12,7 @@
     "db:migrate": "prisma migrate dev",
     "db:reset": "prisma migrate reset",
     "init:profiles": "tsx scripts/init-profiles.ts",
+    "db:admin": "tsx scripts/make-admin.ts",
     "scrape:profiles": "tsx scripts/scrape-profiles.ts"
   },
   "dependencies": {

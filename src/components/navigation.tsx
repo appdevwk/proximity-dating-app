@@ -21,14 +21,14 @@ interface NavigationProps {
 
 export function Navigation({ currentPath }: NavigationProps) {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
-  const { status, logout } = useSession();
+  const { status, isAdmin, logout } = useSession();
   const isAuthed = status === 'authenticated';
 
   const appLinks = [
     { href: '/profile', label: 'Discover', icon: Heart },
     { href: '/messages', label: 'Messages', icon: MessageCircle },
     { href: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
-    { href: '/admin', label: 'Admin', icon: Settings },
+    ...(isAdmin ? [{ href: '/admin', label: 'Admin', icon: Settings }] : []),
   ];
 
   const linkClass = (href: string) =>

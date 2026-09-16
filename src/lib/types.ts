@@ -1,7 +1,10 @@
+export type UserRoleValue = 'USER' | 'ADMIN';
+
 export type SessionUser = {
   id: string;
   email: string;
   name?: string | null;
+  role: UserRoleValue;
 };
 
 export type GenderValue = 'MALE' | 'FEMALE' | 'NON_BINARY' | 'OTHER';

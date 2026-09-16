@@ -26,16 +26,22 @@ import type { AdminStats } from '@/lib/types';
 
 export default function AdminPage() {
   const router = useRouter();
-  const { status } = useSession();
+  const { status, isAdmin } = useSession();
   const [stats, setStats] = useState<AdminStats | null>(null);
   const [loading, setLoading] = useState(true);
+  const [forbidden, setForbidden] = useState(false);
   const [userSearch, setUserSearch] = useState('');
+  const isAuthedAndNotAdmin = status === 'authenticated' && !isAdmin;
 
   const loadStats = () => {
     void fetch('/api/admin/stats', { cache: 'no-store' })
       .then((response) => {
         if (response.status === 401) {
           router.replace('/');
+          return null;
+        }
+        if (response.status === 403) {
+          setForbidden(true);
           return null;
         }
         return response.json();
@@ -70,6 +76,27 @@ export default function AdminPage() {
         <Navigation currentPath="/admin" />
         <div className="flex items-center justify-center min-h-[60vh]">
           <div className="text-pink-500 animate-pulse">Loading admin data…</div>
+        </div>
+      </div>
+    );
+  }
+
+  if (forbidden || (isAuthedAndNotAdmin)) {
+    return (
+      <div className="min-h-screen bg-black text-white">
+        <Navigation currentPath="/admin" />
+        <div className="flex flex-col items-center justify-center min-h-[70vh] gap-4 px-4 text-center">
+          <div className="w-20 h-20 rounded-full bg-pink-600/20 border border-pink-800 flex items-center justify-center">
+            <Shield className="w-10 h-10 text-pink-500" />
+          </div>
+          <h1 className="text-2xl md:text-3xl font-black text-pink-500">Admin access required</h1>
+          <p className="text-gray-400 max-w-md">
+            This area is restricted to Proximity administrators. Any changes to
+            profiles, reports, or bans require an admin account.
+          </p>
+          <Button onClick={() => router.replace('/dashboard')} variant="outline">
+            Back to dashboard
+          </Button>
         </div>
       </div>
     );
