@@ -1,8 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db';
 import bcrypt from 'bcryptjs';
-import { adService } from '@/lib/services/ad-service';
 import { z } from 'zod';
+import {
+  applySessionCookie,
+  signSessionToken,
+} from '@/lib/auth';
 
 const loginSchema = z.object({
   email: z.string().email(),
@@ -55,13 +58,13 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Check age verification
-    if (!user.ageVerified) {
-      return NextResponse.json({
-        error: 'Age verification required',
-        requiresAgeVerification: true,
-        userId: user.id,
-      }, { status: 403 });
+    // Registration already guarantees an 18+ date of birth. Upgrade legacy
+    // accounts so everyone with valid credentials can get in.
+    if (!user.ageVerified && user.profile) {
+      await db.user.update({
+        where: { id: user.id },
+        data: { ageVerified: true }
+      });
     }
 
     // Update last login
@@ -70,49 +73,22 @@ export async function POST(request: NextRequest) {
       data: { lastLogin: new Date() }
     });
 
-    // Create ad session for login (requires 2 ads to watch)
-    const adSessionResult = await adService.createAdSession({
-      userId: user.id,
-      purpose: 'LOGIN',
-      adsRequired: 2
+    // Issue a signed session cookie
+    const token = await signSessionToken({
+      id: user.id,
+      email: user.email,
+      name: user.name,
     });
 
-    if (!adSessionResult.success) {
-      return NextResponse.json(
-        { error: 'Failed to create ad session' },
-        { status: 500 }
-      );
-    }
-
-    // In a real implementation, you would:
-    // 1. Generate and return a JWT token
-    // 2. Set secure HTTP-only cookies
-    // 3. Implement proper session management
-
-    // For demo purposes, we'll return user data
-    // In production, never return sensitive data like password hash
     const { password, ...userWithoutPassword } = user;
 
-    // Return response indicating ad session is required for login
-    return NextResponse.json({
-      message: 'Credentials verified. Please watch 2 ads to complete login.',
-      requiresAds: true,
-      adSession: {
-        sessionId: adSessionResult.sessionId,
-        adsRequired: adSessionResult.adsRequired,
-        adsWatched: adSessionResult.adsWatched,
-        completed: adSessionResult.completed
-      },
-      user: {
-        ...userWithoutPassword,
-        profile: user.profile ? {
-          ...user.profile,
-          // Don't return sensitive profile data if needed
-        } : null,
-      },
-      // In production, return JWT token here after ad completion
-      // token: 'demo-token-' + user.id, // Replace with real JWT
+    const response = NextResponse.json({
+      message: 'Login successful. Welcome back to Proximity!',
+      session: 'created',
+      user: userWithoutPassword,
     });
+
+    return applySessionCookie(response, token);
 
   } catch (error) {
     if (error instanceof z.ZodError) {

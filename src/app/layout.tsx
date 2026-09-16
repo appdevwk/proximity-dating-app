@@ -26,6 +26,17 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" suppressHydrationWarning className="dark">
+      <head>
+        <script async src="https://www.googletagmanager.com/gtag/js?id=G-FF513PQ8DT" />
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `window.dataLayer = window.dataLayer || [];
+function gtag(){dataLayer.push(arguments);}
+gtag('js', new Date());
+gtag('config', 'G-FF513PQ8DT', { anonymize_ip: true });`,
+          }}
+        />
+      </head>
       <body
         className="font-sans antialiased bg-background text-foreground"
       >

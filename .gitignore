@@ -47,3 +47,12 @@ test
 prompt
 
 server.log
+# SQLite databases (user data — never commit live DBs)
+*.db
+*.db-journal
+/db/
+/data/
+/backups/
+/backup-setup-*/
+npm-audit-*.json
+proximity-vps-update-and-launch.sh

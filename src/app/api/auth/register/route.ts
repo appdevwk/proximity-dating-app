@@ -2,6 +2,10 @@ import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db';
 import bcrypt from 'bcryptjs';
 import { z } from 'zod';
+import {
+  applySessionCookie,
+  signSessionToken,
+} from '@/lib/auth';
 
 const registerSchema = z.object({
   email: z.string().email(),
@@ -56,7 +60,8 @@ export async function POST(request: NextRequest) {
         email: validatedData.email,
         name: validatedData.name,
         password: hashedPassword,
-        ageVerified: false, // Will be verified through additional process
+        // Age is proven 18+ by the validated date of birth on this exact route.
+        ageVerified: true,
       },
       select: {
         id: true,
@@ -90,11 +95,21 @@ export async function POST(request: NextRequest) {
       }
     });
 
-    return NextResponse.json({
-      message: 'Registration successful. Please complete age verification.',
-      user,
-      requiresAgeVerification: true
+    // Sign a session cookie so the user is logged in immediately after registering.
+    const token = await signSessionToken({
+      id: user.id,
+      email: user.email,
+      name: user.name,
     });
+
+    const response = NextResponse.json({
+      message: 'Registration successful. Welcome to Proximity!',
+      user,
+      requiresAgeVerification: false,
+      session: 'created'
+    });
+
+    return applySessionCookie(response, token);
 
   } catch (error) {
     if (error instanceof z.ZodError) {
