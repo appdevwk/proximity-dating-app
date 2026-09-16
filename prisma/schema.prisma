@@ -19,6 +19,7 @@ model User {
   emailVerified   Boolean  @default(false)
   name            String?
   password        String
+  role            UserRole @default(USER)
   ageVerified     Boolean  @default(false)
   isActive        Boolean  @default(true)
   isBanned        Boolean  @default(false)
@@ -191,6 +192,11 @@ model Media {
   user      User        @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@map("media")
+}
+
+enum UserRole {
+  USER
+  ADMIN
 }
 
 // Enums

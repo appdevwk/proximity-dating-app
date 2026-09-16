@@ -1,473 +1,338 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
+import { useRouter } from 'next/navigation';
+import { Navigation } from '@/components/navigation';
+import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
-import { Progress } from '@/components/ui/progress';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Navigation } from '@/components/navigation';
-import { 
-  Activity, 
-  Zap, 
-  Users, 
-  Database, 
-  Settings, 
-  BarChart3, 
-  Clock, 
-  CheckCircle, 
-  AlertTriangle,
-  Play,
-  Phone,
-  MessageSquare,
-  Mic,
-  Volume2,
-  Calendar,
-  Search,
-  BookOpen,
-  Workflow,
-  Server,
-  Cpu,
-  HardDrive,
-  Wifi,
-  Shield
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import {
+  Heart,
+  MessageCircle,
+  MessagesSquare,
+  ShieldCheck,
+  Sparkles,
+  UserRound,
+  Settings,
+  MapPin,
+  ArrowRight,
 } from 'lucide-react';
+import { useSession } from '@/hooks/use-session';
+import type { Conversation, MatchSummary, UserMe } from '@/lib/types';
 
 export default function DashboardPage() {
-  const [activeTab, setActiveTab] = useState('overview');
+  const router = useRouter();
+  const { status } = useSession();
+  const [me, setMe] = useState<UserMe | null>(null);
+  const [matches, setMatches] = useState<MatchSummary[]>([]);
+  const [conversations, setConversations] = useState<Conversation[]>([]);
+  const [loading, setLoading] = useState(true);
 
-  // Mock data for n8n workflow statistics
-  const workflowStats = {
-    prodExecutions: 0,
-    failedExecutions: 0,
-    failureRate: 0,
-    avgRunTime: 0,
-    timeSaved: '--'
-  };
-
-  // Mock system status
-  const systemStatus = [
-    { name: 'n8n Server', status: 'online', icon: Server },
-    { name: 'Database', status: 'online', icon: Database },
-    { name: 'AI Services', status: 'online', icon: Cpu },
-    { name: 'Voice Services', status: 'online', icon: Mic },
-    { name: 'Network', status: 'online', icon: Wifi },
-    { name: 'Security', status: 'online', icon: Shield }
-  ];
-
-  // Quick links for workflows
-  const quickLinks = [
-    { title: 'n8n Workflow Dashboard', icon: Workflow, action: () => {} },
-    { title: 'All Workflows', icon: BarChart3, action: () => {} },
-    { title: 'Credentials', icon: Shield, action: () => {} },
-    { title: 'Executions', icon: Activity, action: () => {} }
-  ];
-
-  // AI workflow examples
-  const aiWorkflows = [
-    { 
-      title: 'Test a Simple AI Agent Example', 
-      icon: Zap, 
-      description: 'Basic AI agent functionality test',
-      action: () => {}
-    },
-    { 
-      title: 'Start OpenAI Workflow', 
-      icon: MessageSquare, 
-      description: 'Launch OpenAI-powered workflow',
-      action: () => {}
-    },
-    { 
-      title: 'Activate Voice Agent (Voiceflow)', 
-      icon: Mic, 
-      description: 'Enable voice-based AI assistant',
-      action: () => {}
-    },
-    { 
-      title: 'Appointment Scheduler (Voice Command)', 
-      icon: Calendar, 
-      description: 'Voice-controlled scheduling system',
-      action: () => {}
-    },
-    { 
-      title: 'Knowledge Search Chatbot', 
-      icon: Search, 
-      description: 'AI-powered knowledge base search',
-      action: () => {}
-    },
-    { 
-      title: 'Phone Voice Agent (Twilio)', 
-      icon: Phone, 
-      description: 'Telephony integration for voice AI',
-      action: () => {}
-    },
-    { 
-      title: 'Text-to-Speech Demo (ElevenLabs)', 
-      icon: Volume2, 
-      description: 'High-quality voice synthesis demo',
-      action: () => {}
-    },
-    { 
-      title: 'AI Voice Assistant & Chat (Experimental)', 
-      icon: MessageSquare, 
-      description: 'Advanced conversational AI',
-      action: () => {}
+  useEffect(() => {
+    if (status === 'loading') return;
+    if (status === 'unauthenticated') {
+      router.replace('/');
+      return;
     }
-  ];
+    void Promise.all([
+      fetch('/api/user/me', { cache: 'no-store' }).then((response) =>
+        response.ok ? (response.json() as Promise<UserMe>) : null
+      ),
+      fetch('/api/matches?limit=4', { cache: 'no-store' }).then((response) =>
+        response.ok ? response.json() : Promise.resolve({ matches: [] })
+      ),
+      fetch('/api/messages', { cache: 'no-store' }).then((response) =>
+        response.ok ? response.json() : Promise.resolve({ conversations: [] })
+      ),
+    ])
+      .then(([meData, matchesData, messagesData]) => {
+        setMe(meData);
+        setMatches(matchesData.matches ?? []);
+        setConversations(messagesData.conversations ?? []);
+      })
+      .catch(() => {
+        setMe(null);
+      })
+      .finally(() => setLoading(false));
+  }, [status, router]);
 
-  const getStatusBadge = (status: string) => {
-    switch (status) {
-      case 'online':
-        return <Badge variant="secondary" className="bg-green-100 text-green-800">Online</Badge>;
-      case 'offline':
-        return <Badge variant="destructive">Offline</Badge>;
-      case 'warning':
-        return <Badge variant="outline" className="border-yellow-500 text-yellow-700">Warning</Badge>;
-      default:
-        return <Badge variant="secondary">Unknown</Badge>;
-    }
-  };
+  if (status === 'loading' || loading) {
+    return (
+      <div className="min-h-screen bg-black text-white">
+        <Navigation currentPath="/dashboard" />
+        <div className="flex items-center justify-center min-h-[60vh]">
+          <div className="text-pink-500 animate-pulse">Loading your dashboard…</div>
+        </div>
+      </div>
+    );
+  }
+
+  const stats = me?.stats;
+  const totalUnread = conversations.reduce((sum, entry) => sum + entry.unreadCount, 0);
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-black text-white">
       <Navigation currentPath="/dashboard" />
-      
-      <div className="p-4 md:p-6 lg:p-8">
-        <div className="max-w-7xl mx-auto space-y-6">
-          <div className="flex items-center justify-between">
-            <div>
-              <h1 className="text-3xl font-bold tracking-tight">WhiteKnight AI MASTER SERVER Dashboard</h1>
-              <p className="text-muted-foreground">
-                Your centralized control hub for n8n automations, AI, and forensic intelligence tools.
-              </p>
-            </div>
-            <Badge variant="outline" className="flex items-center gap-2">
-              <Server className="w-4 h-4" />
-              Master Server
-            </Badge>
+
+      <div className="max-w-5xl mx-auto px-4 py-6 md:py-8 space-y-6">
+        <div className="flex items-center justify-between flex-wrap gap-3">
+          <div>
+            <h1 className="text-3xl md:text-4xl font-black text-pink-500" style={{ textShadow: '0 0 15px rgba(236,72,153,0.6)' }}>
+              Welcome back 👋
+            </h1>
+            <p className="text-gray-400 mt-1">
+              {me?.profile?.displayName ?? me?.user.name ?? me?.user.email}
+            </p>
           </div>
+          <div className="flex gap-2">
+            <Button
+              onClick={() => router.push('/profile')}
+              className="bg-gradient-to-r from-pink-600 to-purple-600 hover:from-pink-700 hover:to-purple-700"
+            >
+              <Heart className="w-4 h-4 mr-2" />
+              Discover
+            </Button>
+            <Button variant="outline" onClick={() => router.push('/profile/edit')}>
+              <Settings className="w-4 h-4 mr-2" />
+              Edit Profile
+            </Button>
+          </div>
+        </div>
 
-          <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-            <TabsList className="grid w-full grid-cols-4">
-              <TabsTrigger value="overview">Overview</TabsTrigger>
-              <TabsTrigger value="workflows">Workflows</TabsTrigger>
-              <TabsTrigger value="ai-tools">AI Tools</TabsTrigger>
-              <TabsTrigger value="system">System</TabsTrigger>
-            </TabsList>
+        {stats && (
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+            <StatCard
+              label="Matches"
+              value={stats.acceptedMatches}
+              icon={<Heart className="w-4 h-4 text-pink-400" />}
+              onClick={() => router.push('/messages')}
+            />
+            <StatCard
+              label="New Messages"
+              value={stats.unreadMessages}
+              icon={<MessagesSquare className="w-4 h-4 text-purple-400" />}
+              onClick={() => router.push('/messages')}
+            />
+            <StatCard
+              label="Likes Received"
+              value={stats.likesReceived}
+              icon={<Sparkles className="w-4 h-4 text-amber-400" />}
+            />
+            <StatCard
+              label="Messages Sent"
+              value={stats.messages}
+              icon={<MessageCircle className="w-4 h-4 text-emerald-400" />}
+            />
+          </div>
+        )}
 
-            <TabsContent value="overview" className="space-y-6">
-              <Card>
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <Activity className="w-5 h-5" />
-                    n8n Workflow Overview
-                  </CardTitle>
-                  <CardDescription>
-                    Last 7 days performance metrics
-                  </CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <div className="grid gap-4 md:grid-cols-5">
-                    <div className="text-center">
-                      <div className="text-2xl font-bold">{workflowStats.prodExecutions}</div>
-                      <div className="text-sm text-muted-foreground">Prod. executions</div>
-                      <Button variant="ghost" size="sm" className="mt-1">Details</Button>
-                    </div>
-                    <div className="text-center">
-                      <div className="text-2xl font-bold text-red-600">{workflowStats.failedExecutions}</div>
-                      <div className="text-sm text-muted-foreground">Failed prod. executions</div>
-                      <Button variant="ghost" size="sm" className="mt-1">Details</Button>
-                    </div>
-                    <div className="text-center">
-                      <div className="text-2xl font-bold">{workflowStats.failureRate}%</div>
-                      <div className="text-sm text-muted-foreground">Failure rate</div>
-                      <Button variant="ghost" size="sm" className="mt-1">Details</Button>
-                    </div>
-                    <div className="text-center">
-                      <div className="text-2xl font-bold">{workflowStats.avgRunTime}s</div>
-                      <div className="text-sm text-muted-foreground">Run time (avg.)</div>
-                      <Button variant="ghost" size="sm" className="mt-1">Details</Button>
-                    </div>
-                    <div className="text-center">
-                      <div className="text-2xl font-bold">{workflowStats.timeSaved}</div>
-                      <div className="text-sm text-muted-foreground">Time saved</div>
-                      <Button variant="ghost" size="sm" className="mt-1">Details</Button>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-
-              <Card>
-                <CardHeader>
-                  <CardTitle>Quick Links</CardTitle>
-                  <CardDescription>
-                    Rapid access to all major modules, automations, and AI voice/agents
-                  </CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <div className="grid gap-2 md:grid-cols-2 lg:grid-cols-4">
-                    {quickLinks.map((link, index) => (
-                      <Button
-                        key={index}
-                        variant="outline"
-                        className="justify-start h-auto p-4"
-                        onClick={link.action}
-                      >
-                        <link.icon className="mr-3 h-5 w-5" />
-                        <div className="text-left">
-                          <div className="font-medium">{link.title}</div>
-                        </div>
-                      </Button>
-                    ))}
-                  </div>
-                </CardContent>
-              </Card>
-
-              <Card>
-                <CardHeader>
-                  <CardTitle>System Status</CardTitle>
-                  <CardDescription>
-                    Current health and performance of all services
-                  </CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-                    {systemStatus.map((service, index) => (
-                      <div key={index} className="flex items-center justify-between p-4 border rounded-lg">
-                        <div className="flex items-center gap-3">
-                          <service.icon className="w-5 h-5 text-muted-foreground" />
-                          <span className="font-medium">{service.name}</span>
-                        </div>
-                        {getStatusBadge(service.status)}
-                      </div>
-                    ))}
-                  </div>
-                </CardContent>
-              </Card>
-            </TabsContent>
-
-            <TabsContent value="workflows" className="space-y-6">
-              <div className="grid gap-6 lg:grid-cols-2">
-                <Card>
-                  <CardHeader>
-                    <CardTitle>My n8n Master Dashboard</CardTitle>
-                    <CardDescription>
-                      All workflows, AI tools, and voice assistant in one place.
-                    </CardDescription>
-                  </CardHeader>
-                  <CardContent className="space-y-4">
-                    <div className="text-center p-8">
-                      <Workflow className="w-16 h-16 mx-auto mb-4 text-muted-foreground" />
-                      <h3 className="text-lg font-semibold mb-2">Workflow Management</h3>
-                      <p className="text-muted-foreground mb-4">
-                        Create, manage, and monitor all your n8n workflows from this central dashboard
-                      </p>
-                      <Button className="w-full">
-                        <BarChart3 className="mr-2 h-4 w-4" />
-                        Open Workflow Dashboard
-                      </Button>
-                    </div>
-                  </CardContent>
-                </Card>
-
-                <Card>
-                  <CardHeader>
-                    <CardTitle>Quick Workflow Links</CardTitle>
-                    <CardDescription>
-                      Access your most used workflows instantly
-                    </CardDescription>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="space-y-2">
-                      {quickLinks.map((link, index) => (
-                        <Button
-                          key={index}
-                          variant="outline"
-                          className="w-full justify-start"
-                          onClick={link.action}
-                        >
-                          <link.icon className="mr-2 h-4 w-4" />
-                          {link.title}
-                        </Button>
-                      ))}
-                    </div>
-                  </CardContent>
-                </Card>
-              </div>
-            </TabsContent>
-
-            <TabsContent value="ai-tools" className="space-y-6">
-              <Card>
-                <CardHeader>
-                  <CardTitle>AI Tools & Voice Agents</CardTitle>
-                  <CardDescription>
-                    Test a Simple AI Agent Example - Tip: Use Quick Links above for rapid access
-                  </CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <div className="grid gap-4 md:grid-cols-2">
-                    {aiWorkflows.map((workflow, index) => (
-                      <Button
-                        key={index}
-                        variant="outline"
-                        className="h-auto p-4 justify-start"
-                        onClick={workflow.action}
-                      >
-                        <workflow.icon className="mr-3 h-5 w-5 flex-shrink-0" />
-                        <div className="text-left">
-                          <div className="font-medium">{workflow.title}</div>
-                          <div className="text-xs text-muted-foreground mt-1">
-                            {workflow.description}
-                          </div>
-                        </div>
-                      </Button>
-                    ))}
-                  </div>
-                </CardContent>
-              </Card>
-
-              <Card>
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <MessageSquare className="w-5 h-5" />
-                    AI Voice Assistant & Chat (Experimental)
-                  </CardTitle>
-                  <CardDescription>
-                    Chat with your n8n AI assistant using text (and, if enabled, voice). Microphone support will appear if the workflow supports it.
-                  </CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-4">
-                    <div className="bg-muted rounded-lg p-4">
-                      <div className="flex items-center gap-2 mb-2">
-                        <CheckCircle className="w-4 h-4 text-green-600" />
-                        <span className="text-sm font-medium text-green-600">System Ready</span>
-                      </div>
-                      <p className="text-sm text-muted-foreground">
-                        Welcome, White! Create Your First Workflow or Test a Simple AI Agent Example
-                      </p>
-                    </div>
-                    
-                    <div className="border rounded-lg p-4">
-                      <div className="flex items-center gap-2 mb-3">
-                        <Mic className="w-4 h-4" />
-                        <span className="text-sm font-medium">Voice Input</span>
-                      </div>
-                      <div className="flex gap-2">
-                        <Button variant="outline" size="sm">
-                          <Mic className="mr-2 h-4 w-4" />
-                          Start Recording
-                        </Button>
-                        <Button variant="outline" size="sm">
-                          <Volume2 className="mr-2 h-4 w-4" />
-                          Test Speaker
-                        </Button>
-                      </div>
-                    </div>
-
-                    <div className="text-center text-xs text-muted-foreground">
-                      Tip: Use Quick Links above for rapid access to all major modules, automations, and AI voice/agents.
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-            </TabsContent>
-
-            <TabsContent value="system" className="space-y-6">
-              <div className="grid gap-6 lg:grid-cols-2">
-                <Card>
-                  <CardHeader>
-                    <CardTitle>Server Information</CardTitle>
-                    <CardDescription>
-                      System specifications and performance metrics
-                    </CardDescription>
-                  </CardHeader>
-                  <CardContent className="space-y-4">
-                    <div className="space-y-3">
-                      <div className="flex justify-between">
-                        <span className="text-sm font-medium">CPU Usage</span>
-                        <span className="text-sm text-muted-foreground">45%</span>
-                      </div>
-                      <Progress value={45} className="h-2" />
-                      
-                      <div className="flex justify-between">
-                        <span className="text-sm font-medium">Memory Usage</span>
-                        <span className="text-sm text-muted-foreground">62%</span>
-                      </div>
-                      <Progress value={62} className="h-2" />
-                      
-                      <div className="flex justify-between">
-                        <span className="text-sm font-medium">Disk Space</span>
-                        <span className="text-sm text-muted-foreground">78%</span>
-                      </div>
-                      <Progress value={78} className="h-2" />
-                      
-                      <div className="flex justify-between">
-                        <span className="text-sm font-medium">Network I/O</span>
-                        <span className="text-sm text-muted-foreground">Normal</span>
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
-
-                <Card>
-                  <CardHeader>
-                    <CardTitle>Service Status</CardTitle>
-                    <CardDescription>
-                      Detailed status of all running services
-                    </CardDescription>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="space-y-3">
-                      {systemStatus.map((service, index) => (
-                        <div key={index} className="flex items-center justify-between">
-                          <div className="flex items-center gap-2">
-                            <service.icon className="w-4 h-4" />
-                            <span className="text-sm">{service.name}</span>
-                          </div>
-                          {getStatusBadge(service.status)}
-                        </div>
-                      ))}
-                    </div>
-                  </CardContent>
-                </Card>
+        <div className="grid lg:grid-cols-3 gap-6">
+          {/* Profile preview */}
+          <Card className="bg-gray-900/60 border-pink-950">
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium text-pink-400">Your Profile</CardTitle>
+              {me?.profile?.ageVerified && (
+                <Badge className="bg-green-900/60 text-green-300 border border-green-700/50">
+                  <ShieldCheck className="w-3 h-3 mr-1" />
+                  Verified
+                </Badge>
+              )}
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="flex items-center gap-4">
+                <Avatar className="w-16 h-16">
+                  <AvatarImage src={me?.profile?.profilePicture ?? undefined} />
+                  <AvatarFallback className="bg-pink-800 text-white text-2xl">
+                    {(me?.profile?.displayName ?? 'U').charAt(0).toUpperCase()}
+                  </AvatarFallback>
+                </Avatar>
+                <div>
+                  <div className="font-bold text-lg">{me?.profile?.displayName ?? 'Set up your profile'}</div>
+                  {me?.profile?.age !== null && me?.profile?.age !== undefined && (
+                    <div className="text-sm text-gray-400">{me?.profile.age} • {me?.profile?.gender}</div>
+                  )}
+                </div>
               </div>
 
-              <Card>
-                <CardHeader>
-                  <CardTitle>System Logs</CardTitle>
-                  <CardDescription>
-                    Recent system events and activities
-                  </CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-2">
-                    <div className="flex items-center gap-2 text-sm">
-                      <CheckCircle className="w-4 h-4 text-green-600" />
-                      <span>System initialized successfully</span>
-                      <span className="text-muted-foreground ml-auto">2 min ago</span>
-                    </div>
-                    <div className="flex items-center gap-2 text-sm">
-                      <Activity className="w-4 h-4 text-blue-600" />
-                      <span>n8n workflow executed</span>
-                      <span className="text-muted-foreground ml-auto">5 min ago</span>
-                    </div>
-                    <div className="flex items-center gap-2 text-sm">
-                      <Zap className="w-4 h-4 text-yellow-600" />
-                      <span>AI service request processed</span>
-                      <span className="text-muted-foreground ml-auto">8 min ago</span>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-            </TabsContent>
-          </Tabs>
+              {me?.profile?.location && (
+                <p className="flex items-center text-sm text-gray-400">
+                  <MapPin className="w-4 h-4 mr-1 text-pink-400" />
+                  {me.profile.location}
+                </p>
+              )}
+              {me?.profile?.bio && (
+                <p className="text-sm text-gray-300 line-clamp-3">{me.profile.bio}</p>
+              )}
 
-          <div className="text-center text-sm text-muted-foreground border-t pt-6">
-            © 2025 WhiteKnight | Digital Forensics & Anti-Trafficking Intelligence via n8n AI Automations
-          </div>
+              <div>
+                <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">Interested in</p>
+                <div className="flex flex-wrap gap-1.5">
+                  {(me?.preferences?.interestedIn ?? []).map((gender) => (
+                    <Badge key={gender} className="bg-gray-800 text-pink-300 border border-pink-900">
+                      {gender}
+                    </Badge>
+                  ))}
+                </div>
+              </div>
+
+              <Button
+                variant="outline"
+                className="w-full"
+                onClick={() => router.push('/profile/edit')}
+              >
+                <UserRound className="w-4 h-4 mr-2" />
+                Edit Details
+              </Button>
+            </CardContent>
+          </Card>
+
+          {/* Recent matches */}
+          <Card className="bg-gray-900/60 border-pink-950">
+            <CardHeader>
+              <CardTitle className="text-pink-400 flex items-center gap-2">
+                <Heart className="w-4 h-4" />
+                Recent Matches
+              </CardTitle>
+              <CardDescription className="text-gray-500">
+                People you&apos;ve matched with
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-3">
+              {matches.length === 0 ? (
+                <div className="text-center py-6 space-y-3">
+                  <p className="text-sm text-gray-500">No matches yet.</p>
+                  <Button
+                    onClick={() => router.push('/profile')}
+                    className="bg-gradient-to-r from-pink-600 to-purple-600 hover:from-pink-700 hover:to-purple-700"
+                  >
+                    <Heart className="w-4 h-4 mr-2" />
+                    Find Your Match
+                  </Button>
+                </div>
+              ) : (
+                matches.map((match) => (
+                  <button
+                    key={match.id}
+                    onClick={() => router.push(`/messages?with=${match.user.userId}`)}
+                    className="w-full flex items-center gap-3 p-3 rounded-xl bg-gray-800/50 hover:bg-pink-950/40 transition-colors text-left"
+                  >
+                    <Avatar className="w-10 h-10">
+                      <AvatarImage src={match.user.profilePicture ?? undefined} />
+                      <AvatarFallback className="bg-pink-800 text-white">
+                        {match.user.displayName.charAt(0).toUpperCase()}
+                      </AvatarFallback>
+                    </Avatar>
+                    <div className="flex-1 min-w-0">
+                      <div className="font-medium truncate flex items-center gap-1">
+                        {match.user.displayName}
+                        {match.user.userVerified && (
+                          <ShieldCheck className="w-3.5 h-3.5 text-emerald-400 flex-shrink-0" />
+                        )}
+                      </div>
+                      <div className="text-xs text-gray-500">Matched {timeAgo(match.matchedAt)}</div>
+                    </div>
+                    <ArrowRight className="w-4 h-4 text-gray-500" />
+                  </button>
+                ))
+              )}
+            </CardContent>
+          </Card>
+
+          {/* Recent messages */}
+          <Card className="bg-gray-900/60 border-pink-950">
+            <CardHeader>
+              <CardTitle className="text-pink-400 flex items-center gap-2">
+                <MessageCircle className="w-4 h-4" />
+                Recent Messages
+              </CardTitle>
+              <CardDescription className="text-gray-500">
+                Latest conversations
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-3">
+              {conversations.length === 0 ? (
+                <div className="text-center py-6">
+                  <p className="text-sm text-gray-500">No conversations yet.</p>
+                </div>
+              ) : (
+                conversations.slice(0, 4).map((conversation) => (
+                  <button
+                    key={conversation.user.userId}
+                    onClick={() => router.push(`/messages?with=${conversation.user.userId}`)}
+                    className="w-full flex items-center gap-3 p-3 rounded-xl bg-gray-800/50 hover:bg-pink-950/40 transition-colors text-left"
+                  >
+                    <Avatar className="w-10 h-10">
+                      <AvatarImage src={conversation.user.profilePicture ?? undefined} />
+                      <AvatarFallback className="bg-pink-800 text-white">
+                        {conversation.user.displayName.charAt(0).toUpperCase()}
+                      </AvatarFallback>
+                    </Avatar>
+                    <div className="flex-1 min-w-0">
+                      <div className="font-medium truncate">{conversation.user.displayName}</div>
+                      <div className={`text-sm truncate ${conversation.unreadCount > 0 ? 'text-pink-400' : 'text-gray-500'}`}>
+                        {conversation.lastMessage?.content ?? 'Say hello 👋'}
+                      </div>
+                    </div>
+                    {conversation.unreadCount > 0 && (
+                      <Badge className="bg-pink-600">{conversation.unreadCount}</Badge>
+                    )}
+                  </button>
+                ))
+              )}
+              {totalUnread > 0 && (
+                <Button variant="outline" className="w-full" onClick={() => router.push('/messages')}>
+                  Open Messages
+                </Button>
+              )}
+            </CardContent>
+          </Card>
         </div>
       </div>
     </div>
   );
+}
+
+function StatCard({
+  label,
+  value,
+  icon,
+  onClick,
+}: {
+  label: string;
+  value: number;
+  icon: React.ReactNode;
+  onClick?: () => void;
+}) {
+  const content = (
+    <>
+      <div className="flex flex-row items-center justify-between space-y-0 pb-2">
+        <CardTitle className="text-sm font-medium text-gray-400">{label}</CardTitle>
+        {icon}
+      </div>
+      <div>
+        <div className="text-3xl font-black text-white">{value}</div>
+      </div>
+    </>
+  );
+
+  return onClick ? (
+    <button onClick={onClick} className="text-left bg-gray-900/60 border border-pink-950 rounded-2xl p-4 hover:bg-pink-950/40 transition-colors">
+      {content}
+    </button>
+  ) : (
+    <div className="bg-gray-900/60 border border-pink-950 rounded-2xl p-4">{content}</div>
+  );
+}
+
+function timeAgo(iso: string): string {
+  const seconds = Math.floor((Date.now() - new Date(iso).getTime()) / 1000);
+  if (seconds < 60) return 'just now';
+  const minutes = Math.floor(seconds / 60);
+  if (minutes < 60) return `${minutes} min ago`;
+  const hours = Math.floor(minutes / 60);
+  if (hours < 24) return `${hours} hr ago`;
+  const days = Math.floor(hours / 24);
+  if (days < 7) return `${days} day${days > 1 ? 's' : ''} ago`;
+  return new Date(iso).toLocaleDateString();
 }
