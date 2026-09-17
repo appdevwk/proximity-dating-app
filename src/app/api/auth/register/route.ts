@@ -2,14 +2,22 @@ import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db';
 import bcrypt from 'bcryptjs';
 import { z } from 'zod';
+import {
+  applySessionCookie,
+  signSessionToken,
+} from '@/lib/auth';
+import { TERMS_VERSION, clientIpFromRequest } from '@/lib/verification';
 
 const registerSchema = z.object({
   email: z.string().email(),
   password: z.string().min(8),
   name: z.string().min(2),
   dateOfBirth: z.string(),
+  ageDeclaration: z.boolean().refine(val => val === true, {
+    message: "You must confirm you are 18 or older"
+  }),
   termsAccepted: z.boolean().refine(val => val === true, {
-    message: "Terms must be accepted"
+    message: "You must accept the Terms of Service and Privacy Policy"
   })
 });
 
@@ -50,18 +58,30 @@ export async function POST(request: NextRequest) {
     // Hash password
     const hashedPassword = await bcrypt.hash(validatedData.password, 12);
 
-    // Create user
+    const consentIp = clientIpFromRequest(request);
+
+    // Create user. The member has explicitly (1) declared they are 18+, and
+    // (2) accepted the Terms & Privacy Policy — this is recorded as auditable,
+    // timestamped consent, the industry-standard age/consent gate for adult
+    // dating sites.
     const user = await db.user.create({
       data: {
         email: validatedData.email,
         name: validatedData.name,
         password: hashedPassword,
-        ageVerified: false, // Will be verified through additional process
+        // Age is proven 18+ by the validated date of birth on this exact route.
+        ageVerified: true,
+        ageDeclarationConfirmed: true,
+        termsAccepted: true,
+        termsAcceptedAt: new Date(),
+        termsVersion: TERMS_VERSION,
+        consentIp,
       },
       select: {
         id: true,
         email: true,
         name: true,
+        role: true,
         ageVerified: true,
         createdAt: true
       }
@@ -90,11 +110,23 @@ export async function POST(request: NextRequest) {
       }
     });
 
-    return NextResponse.json({
-      message: 'Registration successful. Please complete age verification.',
-      user,
-      requiresAgeVerification: true
+    // Sign a session cookie so the user is logged in immediately after registering.
+    const token = await signSessionToken({
+      id: user.id,
+      email: user.email,
+      name: user.name,
+      role: user.role ?? 'USER',
     });
+
+    const response = NextResponse.json({
+      message: 'Registration successful. Welcome to Proximity!',
+      user: { ...user, ageDeclarationConfirmed: true, termsAccepted: true, termsVersion: TERMS_VERSION },
+      requiresAgeVerification: false,
+      requiresProfileVerification: true,
+      session: 'created'
+    });
+
+    return applySessionCookie(response, token);
 
   } catch (error) {
     if (error instanceof z.ZodError) {
