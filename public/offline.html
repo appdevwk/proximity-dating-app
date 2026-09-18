@@ -1,0 +1,41 @@
+<!doctype html>
+<html lang="en" class="dark">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="theme-color" content="#171023" />
+    <title>Proximity - No connection</title>
+    <style>
+      body {
+        margin: 0;
+        font-family: system-ui, sans-serif;
+        background: #14101c;
+        color: #f3f3f7;
+        display: flex;
+        min-height: 100dvh;
+        align-items: center;
+        justify-content: center;
+        text-align: center;
+        padding: 24px;
+      }
+      h1 { font-size: 22px; margin: 0 0 8px; color: #ff7a5c; }
+      p { color: #b8b3c7; margin: 0 0 20px; }
+      a {
+        display: inline-block;
+        border: 1px solid #ff7a5c;
+        color: #ff7a5c;
+        text-decoration: none;
+        padding: 10px 20px;
+        border-radius: 999px;
+        font-size: 14px;
+      }
+    </style>
+  </head>
+  <body>
+    <div>
+      <h1>You're offline</h1>
+      <p>Connect to the internet to browse Proximity.</p>
+      <a href="/" onclick="location.reload()">Retry</a>
+    </div>
+  </body>
+</html>

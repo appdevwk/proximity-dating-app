@@ -1,0 +1,33 @@
+{
+  "id": "/",
+  "name": "Proximity - 18+ Adult Dating App",
+  "short_name": "Proximity",
+  "description": "Find your perfect match nearby. Advanced dating platform with biometric (face) verification.",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "portrait",
+  "categories": ["social", "dating", "lifestyle"],
+  "theme_color": "#171023",
+  "background_color": "#171023",
+  "icons": [
+    {
+      "src": "/icons/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/icons/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/icons/maskable-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
+  ]
+}

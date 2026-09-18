@@ -1,0 +1,12 @@
+[
+  {
+    "relation": ["delegate_permission/common.handle_all_urls"],
+    "target": {
+      "namespace": "android_app",
+      "package_name": "com.proximitydating.app",
+      "sha256_cert_fingerprints": [
+        "3D:77:C8:2A:75:4F:6A:BC:02:85:09:3A:D1:AF:BB:54:A6:88:F2:BB:DC:F3:AC:B9:2E:2F:39:8A:DD:DD:80:BA"
+      ]
+    }
+  }
+]
