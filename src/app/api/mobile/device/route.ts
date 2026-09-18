@@ -280,7 +280,7 @@ async function handleGetLatestVersion(platform: string | null) {
     );
   }
 
-  const version = await deviceService.getLatestAppVersion(platform as 'ios' | 'android');
+  const version = await deviceService.getLatestAppVersion((platform as string).toUpperCase() as any);
 
   if (!version) {
     return NextResponse.json(

@@ -307,7 +307,7 @@ export class BiometricService {
       }
 
       // Calculate overall confidence and success
-      const verificationScores = [];
+      const verificationScores: number[] = [];
       if (documentResult.success) verificationScores.push(documentResult.authenticityScore);
       if (facialResult?.success) verificationScores.push(facialResult.confidence);
       if (biometricResult?.success) verificationScores.push(biometricResult.confidence);

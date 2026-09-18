@@ -200,7 +200,7 @@ export default function ProfileEditPage() {
               About You
             </CardTitle>
             <CardDescription className="text-gray-500">
-              {me?.ageVerified ? 'Your account is verified ✓' : 'Complete your profile to start matching'}
+              {(me as any)?.ageVerified ? 'Your account is verified ✓' : 'Complete your profile to start matching'}
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-5">

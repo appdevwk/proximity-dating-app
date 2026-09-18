@@ -4,7 +4,7 @@ const prisma = new PrismaClient();
 
 export interface DeviceInfo {
   deviceId: string;
-  platform: 'ios' | 'android';
+  platform: 'IOS' | 'android';
   model: string;
   osVersion: string;
   appVersion: string;
@@ -19,7 +19,7 @@ export interface DeviceInfo {
 export interface AppVersion {
   version: string;
   buildNumber: string;
-  platform: 'ios' | 'android';
+  platform: 'IOS' | 'android';
   releaseDate: Date;
   isRequired: boolean;
   changelog: string[];
@@ -49,7 +49,7 @@ export class DeviceManagementService {
         const updatedDevice = await prisma.device.update({
           where: { deviceId: deviceInfo.deviceId },
           data: {
-            ...deviceInfo,
+            ...deviceInfo, platform: (deviceInfo.platform?.toUpperCase() as any),
             updatedAt: new Date(),
           },
         });
@@ -58,7 +58,7 @@ export class DeviceManagementService {
         // Create new device
         const newDevice = await prisma.device.create({
           data: {
-            ...deviceInfo,
+            ...deviceInfo, platform: (deviceInfo.platform?.toUpperCase() as any),
             createdAt: new Date(),
             updatedAt: new Date(),
           },
@@ -76,7 +76,7 @@ export class DeviceManagementService {
       const updatedDevice = await prisma.device.update({
         where: { deviceId },
         data: {
-          ...updates,
+          ...(updates as any),
           updatedAt: new Date(),
         },
       });
@@ -198,8 +198,8 @@ export class DeviceManagementService {
     try {
       const [total, android, ios, active, notificationsEnabled] = await Promise.all([
         prisma.device.count(),
-        prisma.device.count({ where: { platform: 'android' } }),
-        prisma.device.count({ where: { platform: 'ios' } }),
+        prisma.device.count({ where: { platform: 'ANDROID' } }),
+        prisma.device.count({ where: { platform: 'IOS' } }),
         prisma.device.count({
           where: {
             lastActiveAt: {
@@ -230,7 +230,7 @@ export class DeviceManagementService {
   }
 
   // App version management
-  async getLatestAppVersion(platform: 'ios' | 'android'): Promise<AppVersion | null> {
+  async getLatestAppVersion(platform: 'IOS' | 'android'): Promise<AppVersion | null> {
     try {
       const version = await prisma.appVersion.findFirst({
         where: { platform },

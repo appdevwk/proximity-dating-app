@@ -5,7 +5,7 @@ import { randomBytes } from 'crypto';
 import { loadFaceModels } from './face-fingerprint';
 
 type FaceNetInput = Parameters<typeof faceapi.detectAllFaces>[0];
-function asNetInput(tensor: tf.Tensor3D): FaceNetInput {
+function asNetInput(tensor: any): FaceNetInput {
   return tensor as unknown as FaceNetInput;
 }
 
@@ -198,9 +198,9 @@ export async function verifyLiveness(
         message: 'A liveness frame was too large. Use the camera capture tool.',
       };
     }
-    let input: tf.Tensor3D | null = null;
+    let input: any | null = null;
     try {
-      input = tf.node.decodeImage(frames[i], 3) as tf.Tensor3D;
+      input = (tf as any).node.decodeImage(frames[i], 3) as any;
       const detections = await faceapi
         .detectAllFaces(
           asNetInput(input),

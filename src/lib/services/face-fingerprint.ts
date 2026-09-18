@@ -72,7 +72,7 @@ let modelsLoaded: Promise<void> | null = null;
 type FaceNetInput = Parameters<typeof faceapi.detectAllFaces>[0];
 
 /** face-api's type union omits tf.Tensor; runtime accepts tensors. */
-function asNetInput(tensor: tf.Tensor3D): FaceNetInput {
+function asNetInput(tensor: any): FaceNetInput {
   return tensor as unknown as FaceNetInput;
 }
 
@@ -171,9 +171,9 @@ async function computeFaceSharpness(
 export async function analyzeFace(buffer: Buffer): Promise<FaceAnalysis> {
   await loadFaceModels();
 
-  let input: tf.Tensor3D | null = null;
+  let input: any | null = null;
   try {
-    input = tf.node.decodeImage(buffer, 3) as tf.Tensor3D;
+    input = (tf as any).node.decodeImage(buffer, 3) as any;
 
     const detections = await faceapi
       .detectAllFaces(
@@ -322,7 +322,7 @@ export function samePerson(a: number[], b: number[]): boolean {
 export async function analyzeFaceInDocument(buffer: Buffer): Promise<FaceAnalysis> {
   await loadFaceModels();
 
-  const runProbe = async (input: tf.Tensor3D, inputSize: number) =>
+  const runProbe = async (input: any, inputSize: number) =>
     faceapi
       .detectAllFaces(
         asNetInput(input),
@@ -340,7 +340,7 @@ export async function analyzeFaceInDocument(buffer: Buffer): Promise<FaceAnalysi
   const CROP_PROBE_SIZES = [224, 416, 640];
 
   const findDocumentFace = async (
-    tensor: tf.Tensor3D,
+    tensor: any,
     sizes: number[]
   ): Promise<{ detections: NetDetection[]; probeWidth: number; probeHeight: number } | null> => {
     let last: NetDetection[] = [];
@@ -359,7 +359,7 @@ export async function analyzeFaceInDocument(buffer: Buffer): Promise<FaceAnalysi
     return null;
   };
 
-  const runEmbed = async (tensor: tf.Tensor3D) =>
+  const runEmbed = async (tensor: any) =>
     faceapi
       .detectAllFaces(
         asNetInput(tensor),
@@ -368,14 +368,14 @@ export async function analyzeFaceInDocument(buffer: Buffer): Promise<FaceAnalysi
       .withFaceLandmarks()
       .withFaceDescriptors();
 
-  let input: tf.Tensor3D | null = null;
-  let crop: tf.Tensor3D | null = null;
+  let input: any | null = null;
+  let crop: any | null = null;
 
   try {
     const meta = await sharp(buffer).metadata();
     const width = meta.width ?? 0;
     const height = meta.height ?? 0;
-    input = tf.node.decodeImage(buffer, 3) as tf.Tensor3D;
+    input = (tf as any).node.decodeImage(buffer, 3) as any;
 
     let detections: NetDetection[] = [];
     let active = input;
@@ -387,15 +387,15 @@ export async function analyzeFaceInDocument(buffer: Buffer): Promise<FaceAnalysi
       detections = wholeProbe.detections;
     } else if (width > 0 && height > 0) {
       // Fallback: probe the up-scaled portrait region (typically upper-left).
-      crop = tf.image
+      crop = (tf as any).image
         .cropAndResize(
-          tf.expandDims(input) as tf.Tensor4D,
+          (tf as any).expandDims(input) as any,
           [[0, 0, 1, 1]],
           [0],
           [Math.round(height * 0.85 * 1.6), Math.round(width * 0.6 * 1.6)],
           'bilinear'
         )
-        .squeeze([0]) as tf.Tensor3D;
+        .squeeze([0]) as any;
       active = crop;
       probeWidth = crop.shape[1];
       probeHeight = crop.shape[0];
@@ -448,7 +448,7 @@ export async function analyzeFaceInDocument(buffer: Buffer): Promise<FaceAnalysi
     }
 
     // Embed on an up-scaled face region for a reliable descriptor.
-    let embedTensor: tf.Tensor3D | null = null;
+    let embedTensor: any | null = null;
     try {
       const padX = Math.max(6, box.width * 0.18);
       const padY = Math.max(6, box.height * 0.18);
@@ -458,9 +458,9 @@ export async function analyzeFaceInDocument(buffer: Buffer): Promise<FaceAnalysi
       const bottom = Math.min(probeHeight, box.y + box.height + padY);
       const boxW = Math.max(32, right - left);
       const boxH = Math.max(32, bottom - top);
-      embedTensor = tf.image
+      embedTensor = (tf as any).image
         .cropAndResize(
-          tf.expandDims(active) as tf.Tensor4D,
+          (tf as any).expandDims(active) as any,
           [
             [
               top / probeHeight,
@@ -473,7 +473,7 @@ export async function analyzeFaceInDocument(buffer: Buffer): Promise<FaceAnalysi
           [Math.round(boxH * 2), Math.round(boxW * 2)],
           'bilinear'
         )
-        .squeeze([0]) as tf.Tensor3D;
+        .squeeze([0]) as any;
 
       const embedded = await runEmbed(embedTensor);
       if (embedded.length === 0) {

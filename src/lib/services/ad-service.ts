@@ -297,7 +297,7 @@ export class AdService {
           adsWatched: session.adsWatched,
           completed: session.completed,
           status: session.status,
-          expiresAt: session.expiresAt
+          expiresAt: session.expiresAt ?? undefined
         }
       };
 
