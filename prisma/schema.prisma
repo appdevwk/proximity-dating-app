@@ -31,6 +31,12 @@ model User {
   consentIp                String?
   photoVerified            Boolean  @default(false)
   photoSubmittedAt         DateTime?
+  // Face-recognition fingerprint (FaceNet 128-d embedding, facenet128-v1).
+  // Active face scanning in /api/verification/photo extracts and stores a
+  // unique biometric fingerprint so the platform can verify a real, single,
+  // frontal face and detect members attempting to run duplicate profiles.
+  faceFingerprint          String?
+  faceFingerprintVersion   String?
   isActive        Boolean  @default(true)
   isBanned        Boolean  @default(false)
   lastLogin       DateTime?
@@ -144,6 +150,12 @@ model Verification {
   biometricData String?        // Base64 encoded biometric data (fingerprint, etc.)
   faceVerified Boolean         @default(false)
   biometricVerified Boolean    @default(false)
+  // Face-recognition fingerprint audit trail: the serialized 128-d embedding
+  // evaluated for this attempt, plus (only when a duplicate look-alike
+  // profile was found) the match score and the closest matching user.
+  faceFingerprint String?
+  matchScore      Float?
+  matchUserId     String?
   status      VerificationStatus @default(PENDING)
   verifiedAt  DateTime?
   createdAt   DateTime         @default(now())

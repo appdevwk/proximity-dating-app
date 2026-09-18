@@ -237,7 +237,9 @@ export default function VerifyPage() {
               </CardTitle>
             </div>
             <CardDescription className="text-gray-500">
-              Upload a clear photo of your face so the community can see who you are.
+              Upload a clear, frontal photo of your face. We run a real face-recognition
+              scan that creates a unique, private facial fingerprint — so we can confirm
+              you're a real member and block the same face from opening multiple accounts.
               Stored privately — never shown to other members.
             </CardDescription>
           </CardHeader>
