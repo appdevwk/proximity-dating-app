@@ -1,0 +1,16 @@
+backup-final-install-20250809-230750
+usr
+backups
+backup-setup-*
+control.tar.gz
+data.tar.gz
+debian-binary
+cloudflared.deb
+cloudflared.yml
+cloudflare-block-page.html
+public/uploads
+db
+prisma/*.db
+.env
+.env.*
+.vercel
