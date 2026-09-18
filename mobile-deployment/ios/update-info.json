@@ -1,0 +1,21 @@
+{
+  "currentVersion": "1.0.0",
+  "platforms": {
+    "ios": {
+      "version": "1.0.0",
+      "buildNumber": "1",
+      "isRequired": false,
+      "size": "52MB",
+      "downloadUrl": "https://apps.apple.com/app/proximity-dating/id1234567890",
+      "changelog": [
+        "Initial release",
+        "Modern dating app interface",
+        "Real-time messaging with Socket.IO",
+        "Location-based matching",
+        "Push notifications",
+        "Profile verification",
+        "Ad-supported free access model"
+      ]
+    }
+  }
+}

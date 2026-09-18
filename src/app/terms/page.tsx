@@ -9,7 +9,7 @@ export const metadata: Metadata = {
 
 export default function TermsPage() {
   return (
-    <LegalShell title="Terms of Service" updatedLabel="September 17, 2026">
+    <LegalShell title="Terms of Service" updatedLabel="September 18, 2026 (v2.0)">
       <p>
         Welcome to Proximity, an 18+ adult dating platform. These Terms of Service
         (“Terms”) form a legal agreement between you and Proximity. By registering,
@@ -103,12 +103,25 @@ export default function TermsPage() {
         <h2 className="text-lg font-bold text-pink-400 mb-2">5. Prohibited Conduct</h2>
         <ul className="list-disc pl-5 space-y-1">
           <li>Misrepresenting your age, identity, or current location.</li>
-          <li>Harassment, hate speech, threats, or non-consensual messaging.</li>
-          <li>Posting content that is illegal, violent, or non-consensually intimate.</li>
-          <li>Using Proximity for solicitation, scams, or any illegal purpose.</li>
-          <li>Impersonating other people or creating fake profiles.</li>
+          <li>Harassment, hate speech, threats, stalking, doxxing, or non-consensual messaging.</li>
+          <li>Posting content that is illegal, violent, or non-consensually intimate (including non-consensual intimate imagery and deepfakes).</li>
+          <li>
+            Soliciting, offering, arranging, or facilitating prostitution, commercial sex
+            acts, or sex trafficking — including &quot;sugar&quot; arrangements that involve
+            payment or gifts in exchange for sexual activity (FOSTA-SESTA compliance).
+          </li>
+          <li>Posting, requesting, or distributing child sexual abuse material (CSAM) or any content involving persons under 18.</li>
+          <li>Using Proximity for scams, phishing, or any other illegal purpose.</li>
+          <li>Impersonating other people or creating fake or duplicate profiles.</li>
           <li>Attempting to harvest member data, scrape, or interfere with the service.</li>
         </ul>
+        <p className="mt-2">
+          See also our{" "}
+          <a href="/community-guidelines" className="text-pink-400 underline">
+            Community Guidelines &amp; Safety Standards
+          </a>
+          .
+        </p>
       </section>
 
       <section>

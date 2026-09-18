@@ -29,6 +29,13 @@ model User {
   termsAcceptedAt          DateTime?
   termsVersion             String?
   consentIp                String?
+  // Legal versioning (Terms / Privacy / Guidelines)
+  privacyAccepted          Boolean  @default(false)
+  privacyAcceptedAt        DateTime?
+  privacyVersion           String?
+  guidelinesAccepted       Boolean  @default(false)
+  guidelinesAcceptedAt     DateTime?
+  guidelinesVersion        String?
   photoVerified            Boolean  @default(false)
   photoSubmittedAt         DateTime?
   // Face-recognition fingerprint (FaceNet 128-d embedding, facenet128-v1).
@@ -63,6 +70,7 @@ model User {
   sentReports     Report[] @relation("Reporter")
   receivedReports Report[] @relation("Reported")
   verification    Verification?
+  legalAcceptances LegalAcceptance[]
   matchesAsUser1  Match[] @relation("User1Matches")
   matchesAsUser2  Match[] @relation("User2Matches")
   blocksAsBlocker Block[] @relation("Blocker")
@@ -223,6 +231,25 @@ model Block {
   @@unique([blockerId, blockedId])
   @@map("blocks")
 }
+
+
+model LegalAcceptance {
+  id           String   @id @default(cuid())
+  userId       String
+  document     String   // "terms" | "privacy" | "guidelines"
+  version      String
+  acceptedAt   DateTime @default(now())
+  ipAddress    String?
+  userAgent    String?
+  documentHash String?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, document])
+  @@index([document, version])
+  @@map("legal_acceptances")
+}
+
 
 model Media {
   id        String      @id @default(cuid())

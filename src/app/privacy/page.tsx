@@ -8,7 +8,7 @@ export const metadata: Metadata = {
 
 export default function PrivacyPage() {
   return (
-    <LegalShell title="Privacy Policy" updatedLabel="September 17, 2026">
+    <LegalShell title="Privacy Policy" updatedLabel="September 18, 2026 (v2.0)">
       <p>
         This Privacy Policy explains what information Proximity collects, why we collect
         it, and how you can control it. Because Proximity is an adult dating platform we
