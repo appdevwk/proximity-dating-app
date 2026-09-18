@@ -233,7 +233,7 @@ export class DeviceManagementService {
   async getLatestAppVersion(platform: 'IOS' | 'android'): Promise<AppVersion | null> {
     try {
       const version = await prisma.appVersion.findFirst({
-        where: { platform },
+        where: { platform: platform?.toUpperCase() as any },
         orderBy: { releaseDate: 'desc' },
       });
       return version ? this.mapToAppVersion(version) : null;
