@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Checkbox } from '@/components/ui/checkbox';
+import { LivenessCamera } from '@/components/liveness-camera';
 import Link from 'next/link';
 import {
   ShieldCheck,
@@ -18,23 +19,47 @@ import {
   Calendar,
   FileText,
   Upload,
+  IdCard,
+  ScanFace,
+  ShieldCheck as ShieldCheckIcon,
 } from 'lucide-react';
 import { useSession } from '@/hooks/use-session';
 import type { ProfileVerificationStatus } from '@/lib/types';
+
+type IdStatus = {
+  idVerified: boolean;
+  idVerifiedAt: string | null;
+  documentType: string | null;
+  dobMasked: string | null;
+  source: string | null;
+  country: string | null;
+  idFaceMatchScore: number | null;
+};
+
+const DOCUMENT_OPTIONS: { value: string; label: string }[] = [
+  { value: 'DRIVERS_LICENSE', label: 'Driver’s License' },
+  { value: 'PASSPORT', label: 'Passport' },
+  { value: 'ID_CARD', label: 'National ID Card' },
+];
 
 export default function VerifyPage() {
   const router = useRouter();
   const { status } = useSession();
   const [verification, setVerification] = useState<ProfileVerificationStatus | null>(null);
+  const [idStatus, setIdStatus] = useState<IdStatus | null>(null);
   const [loading, setLoading] = useState(true);
 
   const [ageChecked, setAgeChecked] = useState(false);
   const [termsChecked, setTermsChecked] = useState(false);
   const [submittingConsent, setSubmittingConsent] = useState(false);
   const [uploadingPhoto, setUploadingPhoto] = useState(false);
+  const [documentType, setDocumentType] = useState<string>('DRIVERS_LICENSE');
+  const [uploadingId, setUploadingId] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
+  const [livenessResult, setLivenessResult] = useState<{ blinks: number; score: number } | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const idInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     if (status === 'loading') return;
@@ -47,10 +72,16 @@ export default function VerifyPage() {
 
   const refresh = async () => {
     try {
-      const response = await fetch('/api/user/me', { cache: 'no-store' });
-      if (response.ok) {
-        const data = (await response.json()) as { verification: ProfileVerificationStatus };
+      const [meRes, idRes] = await Promise.all([
+        fetch('/api/user/me', { cache: 'no-store' }),
+        fetch('/api/verification/id', { cache: 'no-store' }),
+      ]);
+      if (meRes.ok) {
+        const data = (await meRes.json()) as { verification: ProfileVerificationStatus };
         setVerification(data.verification);
+      }
+      if (idRes.ok) {
+        setIdStatus((await idRes.json()) as IdStatus);
       }
     } catch {
       setVerification(null);
@@ -112,10 +143,51 @@ export default function VerifyPage() {
     }
   };
 
-  const onFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+  const handleIdUpload = async (file: File) => {
+    setError(null);
+    setSuccess(null);
+    setUploadingId(true);
+    try {
+      const formData = new FormData();
+      formData.append('file', file);
+      formData.append('documentType', documentType);
+      const response = await fetch('/api/verification/id', {
+        method: 'POST',
+        body: formData,
+      });
+      const data = await response.json();
+      if (!response.ok) {
+        setError(data.error ?? 'ID verification failed. Use a clear photo of your document under 5 MB.');
+        return;
+      }
+      setSuccess(
+        `${data.message} Your ID documents a member who is at least 18 (DOB ${data.dobMasked}, source: ${data.source}).`
+      );
+      await refresh();
+    } catch {
+      setError('Network error — please try again.');
+    } finally {
+      setUploadingId(false);
+    }
+  };
+
+  const onFileChange = (event: React.ChangeEvent<HTMLInputElement>, kind: 'photo' | 'id') => {
     const file = event.target.files?.[0];
-    if (file) void handlePhotoUpload(file);
-    if (fileInputRef.current) fileInputRef.current.value = '';
+    if (file) {
+      void (kind === 'photo' ? handlePhotoUpload(file) : handleIdUpload(file));
+    }
+    const ref = kind === 'photo' ? fileInputRef : idInputRef;
+    if (ref.current) ref.current.value = '';
+  };
+
+  const onLivenessDone = (result: { blinks: number; score: number }) => {
+    setLivenessResult(result);
+    setSuccess('Liveness check passed. Your profile is fully verified.');
+    void refresh();
+  };
+
+  const onLivenessError = (message: string) => {
+    setError(message);
   };
 
   if (loading) {
@@ -130,6 +202,7 @@ export default function VerifyPage() {
   }
 
   const verified = verification?.verified === true;
+  const fullyVerified = verification?.fullyVerified === true;
 
   return (
     <div className="min-h-screen bg-black text-white">
@@ -141,19 +214,25 @@ export default function VerifyPage() {
             Profile Verification
           </h1>
           <p className="text-gray-400 max-w-lg mx-auto">
-            To keep Proximity a safe adult dating community, every member completes
-            verification before browsing, matching, and messaging. It takes under a minute.
+            To keep Proximity a safe adult dating community, every member completes an
+            industry-standard verification: 18+ consent, a verification photo, a government
+            ID proving your age, and a live liveness check.
           </p>
         </div>
 
-        {verified && (
-          <div className="flex items-center justify-center gap-2 py-2">
+        <div className="flex items-center justify-center gap-2 py-1 flex-wrap">
+          {fullyVerified ? (
             <Badge className="bg-green-900/60 text-green-300 border border-green-700/50 px-4 py-1.5 text-base">
-              <ShieldCheck className="w-5 h-5 mr-2" />
-              Fully Verified — you are all set!
+              <ShieldCheckIcon className="w-5 h-5 mr-2" />
+              Fully Verified — ID + Liveness confirmed
             </Badge>
-          </div>
-        )}
+          ) : verified ? (
+            <Badge className="bg-pink-900/60 text-pink-300 border border-pink-700/50 px-4 py-1.5 text-base">
+              <ShieldCheck className="w-5 h-5 mr-2" />
+              Verified — complete the ID & liveness steps for full status
+            </Badge>
+          ) : null}
+        </div>
 
         {error && (
           <div className="flex items-center gap-2 text-sm text-red-300 bg-red-500/10 border border-red-500/30 rounded-lg px-4 py-3">
@@ -175,7 +254,7 @@ export default function VerifyPage() {
               <StepBadge done={verification?.ageDeclarationConfirmed === true && verification?.termsAccepted === true} index={1} />
               <CardTitle className="text-pink-400 flex items-center gap-2">
                 <Calendar className="w-4 h-4" />
-                18+ Age Declaration & Consent
+                18+ Declaration & Consent
               </CardTitle>
             </div>
             <CardDescription className="text-gray-500">
@@ -226,20 +305,20 @@ export default function VerifyPage() {
           </CardContent>
         </Card>
 
-        {/* Step 2 — Verification photo */}
+        {/* Step 2 — Verification photo (selfie fingerprint) */}
         <Card className="bg-gray-900/60 border-pink-950">
           <CardHeader>
             <div className="flex items-center gap-2">
               <StepBadge done={verification?.photoVerified === true} index={2} />
               <CardTitle className="text-pink-400 flex items-center gap-2">
                 <Camera className="w-4 h-4" />
-                Verification Photo
+                Verification Photo (Face Fingerprint)
               </CardTitle>
             </div>
             <CardDescription className="text-gray-500">
-              Upload a clear, frontal photo of your face. We run a real face-recognition
-              scan that creates a unique, private facial fingerprint — so we can confirm
-              you're a real member and block the same face from opening multiple accounts.
+              Upload a clear, frontal photo of your face. A real face-recognition scan creates a
+              unique, private facial fingerprint so we can confirm you're a real member, build
+              the baseline for your ID match, and block the same face from duplicate accounts.
               Stored privately — never shown to other members.
             </CardDescription>
           </CardHeader>
@@ -247,7 +326,7 @@ export default function VerifyPage() {
             {verification?.photoVerified === true ? (
               <div className="text-sm text-green-300 flex items-center gap-2">
                 <CheckCircle2 className="w-4 h-4" />
-                Photo submitted{verification.photoSubmittedAt ? ` on ${new Date(verification.photoSubmittedAt).toLocaleString()}` : ''}.
+                Photo submitted{verification.photoSubmittedAt ? ` on ${new Date(verification.photoSubmittedAt).toLocaleString()}` : ''} — facial fingerprint recorded.
               </div>
             ) : (
               <>
@@ -256,7 +335,7 @@ export default function VerifyPage() {
                   type="file"
                   accept="image/jpeg,image/png,image/webp"
                   className="hidden"
-                  onChange={onFileChange}
+                  onChange={(event) => onFileChange(event, 'photo')}
                 />
                 <Button
                   variant="outline"
@@ -265,39 +344,143 @@ export default function VerifyPage() {
                   disabled={uploadingPhoto}
                 >
                   {uploadingPhoto ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <Upload className="w-4 h-4 mr-2" />}
-                  {uploadingPhoto ? 'Uploading…' : 'Upload Verification Photo'}
+                  {uploadingPhoto ? 'Analyzing face…' : 'Upload Verification Photo'}
                 </Button>
               </>
             )}
           </CardContent>
         </Card>
 
-        {/* Step 3 — Done */}
+        {/* Step 3 — Government ID */}
         <Card className="bg-gray-900/60 border-pink-950">
           <CardHeader>
             <div className="flex items-center gap-2">
-              <StepBadge done={verified} index={3} />
+              <StepBadge done={idStatus?.idVerified === true} index={3} />
               <CardTitle className="text-pink-400 flex items-center gap-2">
-                <ShieldCheck className="w-4 h-4" />
-                Verified Profile
+                <IdCard className="w-4 h-4" />
+                Government ID (Age Evidence)
               </CardTitle>
             </div>
             <CardDescription className="text-gray-500">
-              Once all steps are complete you earn the Verified badge and unlock matching.
+              Upload a clear photo of your &nbsp;government-issued ID. We read the date of birth
+              printed on it (driver's license, passport MRZ, or national ID), confirm 18+, and
+              match the portrait on the document to your verification photo. This is real
+              evidence-based age verification — not a checkbox.
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            {idStatus?.idVerified === true ? (
+              <div className="text-sm text-green-300 space-y-1">
+                <div className="flex items-center gap-2">
+                  <CheckCircle2 className="w-4 h-4" />
+                  ID verified{idStatus.idVerifiedAt ? ` on ${new Date(idStatus.idVerifiedAt).toLocaleString()}` : ''}.
+                </div>
+                <div className="text-gray-400">
+                  Document: {idStatus.documentType ?? '—'} · DOB {idStatus.dobMasked ?? '—'} · Source:{' '}
+                  {idStatus.source === 'mrz' ? 'passport MRZ (machine-readable)' : 'OCR'} · Country:{' '}
+                  {idStatus.country ?? '—'} · Portrait match score: {idStatus.idFaceMatchScore?.toFixed(3) ?? '—'}
+                </div>
+              </div>
+            ) : (
+              <>
+                <div className="flex gap-2 flex-wrap">
+                  {DOCUMENT_OPTIONS.map((option) => (
+                    <Button
+                      key={option.value}
+                      type="button"
+                      variant={documentType === option.value ? 'default' : 'outline'}
+                      className={documentType === option.value ? 'bg-pink-600 text-white' : ''}
+                      onClick={() => setDocumentType(option.value)}
+                    >
+                      {option.label}
+                    </Button>
+                  ))}
+                </div>
+                <input
+                  ref={idInputRef}
+                  type="file"
+                  accept="image/jpeg,image/png,image/webp"
+                  className="hidden"
+                  onChange={(event) => onFileChange(event, 'id')}
+                />
+                <Button
+                  variant="outline"
+                  className="w-full"
+                  onClick={() => idInputRef.current?.click()}
+                  disabled={uploadingId}
+                >
+                  {uploadingId ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <Upload className="w-4 h-4 mr-2" />}
+                  {uploadingId ? 'Reading document…' : 'Upload ID Document'}
+                </Button>
+                <p className="text-xs text-gray-500">
+                  Tips: flat document, no glare or shadows, all corners visible, DOB and MRZ in
+                  focus. Your document is stored privately and is never shown to other members or
+                  served by the site.
+                </p>
+              </>
+            )}
+          </CardContent>
+        </Card>
+
+        {/* Step 4 — Liveness */}
+        <Card className="bg-gray-900/60 border-pink-950">
+          <CardHeader>
+            <div className="flex items-center gap-2">
+              <StepBadge done={verification?.livenessVerified === true} index={4} />
+              <CardTitle className="text-pink-400 flex items-center gap-2">
+                <ScanFace className="w-4 h-4" />
+                Liveness Check
+              </CardTitle>
+            </div>
+            <CardDescription className="text-gray-500">
+              A short live check with your camera. Blink twice — a static photo of a face cannot
+              pass this, which keeps pictures of pictures out of the community.
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            {verification?.livenessVerified === true ? (
+              <div className="text-sm text-green-300 flex items-center gap-2">
+                <CheckCircle2 className="w-4 h-4" />
+                Liveness confirmed — {livenessResult ? `${livenessResult.blinks} blink(s) detected.` : 'you passed the live blink check.'}
+              </div>
+            ) : (
+              <LivenessCamera onDone={onLivenessDone} onError={onLivenessError} />
+            )}
+          </CardContent>
+        </Card>
+
+        {/* Step 5 — Done */}
+        <Card className="bg-gray-900/60 border-pink-950">
+          <CardHeader>
+            <div className="flex items-center gap-2">
+              <StepBadge done={fullyVerified} index={5} />
+              <CardTitle className="text-pink-400 flex items-center gap-2">
+                <ShieldCheckIcon className="w-4 h-4" />
+                Fully Verified Profile
+              </CardTitle>
+            </div>
+            <CardDescription className="text-gray-500">
+              Complete all four steps to earn the Fully Verified badge: 18+ consent, verification
+              photo, government ID, and the live liveness check.
             </CardDescription>
           </CardHeader>
           <CardContent>
-            {verified ? (
+            {fullyVerified ? (
               <Button
                 className="w-full bg-gradient-to-r from-pink-600 to-purple-600 hover:from-pink-700 hover:to-purple-700"
                 onClick={() => router.push('/dashboard')}
               >
                 Continue to Dashboard
               </Button>
+            ) : verified ? (
+              <p className="text-sm text-gray-400 flex items-center gap-2">
+                <ShieldCheck className="w-4 h-4" />
+                Core verification complete. Finish the ID and liveness steps for the Fully Verified badge.
+              </p>
             ) : (
               <p className="text-sm text-gray-400 flex items-center gap-2">
                 <Circle className="w-4 h-4" />
-                Complete steps 1 and 2 to unlock your full profile.
+                Complete the four steps above to unlock your full profile and the Verified badge.
               </p>
             )}
           </CardContent>

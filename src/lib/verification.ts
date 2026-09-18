@@ -6,14 +6,16 @@ import type { NextRequest } from 'next/server';
  * Industry-accepted verification for adult dating sites combines:
  *  1. an explicit 18+ age declaration,
  *  2. recorded consent to the Terms of Service / Privacy Policy (timestamped),
- *  3. a verification photo / selfie submitted to the profile.
+ *  3. a verification photo / selfie submitted to the profile,
+ *  4. a government-issued ID whose date of birth proves 18+ (evidence-based age),
+ *  5. a liveness check (anti-photo-spoof) performed by the member live.
  *
  * Consent is never backfilled silently — each member must accept on their own
  * account so the platform keeps an auditable consent trail.
  */
 
 /** Bump whenever the Terms of Service / Privacy Policy text changes meaningfully. */
-export const TERMS_VERSION = '1.0.0';
+export const TERMS_VERSION = '1.1.0';
 
 export type ProfileVerificationStatus = {
   ageDeclarationConfirmed: boolean;
@@ -23,10 +25,15 @@ export type ProfileVerificationStatus = {
   consentIp: string | null;
   photoVerified: boolean;
   photoSubmittedAt: string | null;
+  idVerified: boolean;
+  idVerifiedAt: string | null;
+  idVerifiedDocumentType: 'DRIVERS_LICENSE' | 'PASSPORT' | 'ID_CARD' | null;
+  livenessVerified: boolean;
   verified: boolean;
+  fullyVerified: boolean;
 };
 
-/** True when every verification step is complete. */
+/** True when the core verification steps are complete (gate for the app). */
 export function isProfileVerified(user: {
   ageVerified: boolean;
   ageDeclarationConfirmed: boolean;
@@ -41,6 +48,22 @@ export function isProfileVerified(user: {
   );
 }
 
+/** True when every verification tier — including ID document + liveness — is done. */
+export function isFullyVerified(user: {
+  ageVerified: boolean;
+  ageDeclarationConfirmed: boolean;
+  termsAccepted: boolean;
+  photoVerified: boolean;
+  idVerified?: boolean;
+  livenessVerified?: boolean;
+}): boolean {
+  return (
+    isProfileVerified(user) &&
+    user.idVerified === true &&
+    user.livenessVerified === true
+  );
+}
+
 export function toProfileVerificationStatus(user: {
   ageVerified: boolean;
   ageDeclarationConfirmed: boolean;
@@ -50,6 +73,10 @@ export function toProfileVerificationStatus(user: {
   consentIp: string | null;
   photoVerified: boolean;
   photoSubmittedAt: Date | null;
+  idVerified?: boolean;
+  idVerifiedAt?: Date | null;
+  livenessVerified?: boolean;
+  verification?: { documentType?: string | null } | null;
 }): ProfileVerificationStatus {
   return {
     ageDeclarationConfirmed: user.ageDeclarationConfirmed,
@@ -59,7 +86,17 @@ export function toProfileVerificationStatus(user: {
     consentIp: user.consentIp,
     photoVerified: user.photoVerified,
     photoSubmittedAt: user.photoSubmittedAt?.toISOString() ?? null,
+    idVerified: user.idVerified === true,
+    idVerifiedAt: user.idVerifiedAt?.toISOString() ?? null,
+    idVerifiedDocumentType:
+      (user.verification?.documentType as
+        | 'DRIVERS_LICENSE'
+        | 'PASSPORT'
+        | 'ID_CARD'
+        | null) ?? null,
+    livenessVerified: user.livenessVerified === true,
     verified: isProfileVerified(user),
+    fullyVerified: isFullyVerified(user),
   };
 }
 

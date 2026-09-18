@@ -108,7 +108,12 @@ export type ProfileVerificationStatus = {
   consentIp: string | null;
   photoVerified: boolean;
   photoSubmittedAt: string | null;
+  idVerified: boolean;
+  idVerifiedAt: string | null;
+  idVerifiedDocumentType: 'DRIVERS_LICENSE' | 'PASSPORT' | 'ID_CARD' | null;
+  livenessVerified: boolean;
   verified: boolean;
+  fullyVerified: boolean;
 };
 
 export type AdminStatsUser = {

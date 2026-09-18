@@ -37,6 +37,18 @@ model User {
   // frontal face and detect members attempting to run duplicate profiles.
   faceFingerprint          String?
   faceFingerprintVersion   String?
+  // Government-ID verification (evidence-based age): an uploaded ID document
+  // whose OCR'd date of birth confirms 18+, cross-matched against the member's
+  // selfie fingerprint. The document image itself is stored privately on the
+  // server and never exposed through any public URL.
+  idVerified               Boolean  @default(false)
+  idVerifiedAt             DateTime?
+  idDocumentHash           String?  // sha256 of the normalized document image
+  idFaceMatchScore         Float?   // cosine distance between ID portrait and selfie fingerprint
+  // Liveness (active anti-spoof): a server-issued challenge verified from a short
+  // burst of webcam frames (blink detection + motion continuity).
+  livenessVerified         Boolean  @default(false)
+  livenessVerifiedAt       DateTime?
   isActive        Boolean  @default(true)
   isBanned        Boolean  @default(false)
   lastLogin       DateTime?
@@ -156,6 +168,18 @@ model Verification {
   faceFingerprint String?
   matchScore      Float?
   matchUserId     String?
+  // Government-ID evidence: how the date of birth was read (MRZ vs OCR text),
+  // the private document fingerprint, the parsed date of birth, issuing
+  // country, and the face-match score between the ID portrait and the
+  // verification selfie fingerprint.
+  idSource          String?
+  idDocumentHash    String?
+  dob               String?
+  documentCountry   String?
+  idFaceMatchScore  Float?
+  // Liveness (active anti-spoof) evidence captured from the blink challenge.
+  livenessVerified  Boolean  @default(false)
+  livenessScore     Float?
   status      VerificationStatus @default(PENDING)
   verifiedAt  DateTime?
   createdAt   DateTime         @default(now())

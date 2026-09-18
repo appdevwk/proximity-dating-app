@@ -24,9 +24,11 @@ export default function TermsPage() {
         <h2 className="text-lg font-bold text-pink-400 mb-2">1. Eligibility — 18+ Only</h2>
         <p>
           Proximity is strictly for adults aged 18 and older. You must confirm you are
-          18 or older at registration and, if asked, during profile verification. We use
-          your date of birth to verify your age. Members who misstate their age or who
-          are, in fact, under 18 will be removed immediately and their account banned.
+          18 or older at registration and prove it during profile verification. Age is
+          verified from evidence: the date of birth read from a government-issued ID
+          (driver's license, passport MRZ, or national ID) you upload, cross-checked
+          against your verification photo. Members who misstate their age or who are,
+          in fact, under 18 will be removed immediately and their account banned.
         </p>
       </section>
 
@@ -46,10 +48,43 @@ export default function TermsPage() {
         <h2 className="text-lg font-bold text-pink-400 mb-2">3. Profile Verification</h2>
         <p>
           To browse, match, and message other members you must complete profile
-          verification: an 18+ declaration, acceptance of these Terms and the Privacy
-          Policy, and submission of a verification photo. A verification photo helps keep
-          the community safe and is never shown publicly without your permission. We may
-          suspend accounts that do not complete verification.
+          verification, which has four tiers:
+        </p>
+        <ul className="list-disc pl-5 space-y-1">
+          <li>
+            <strong>18+ declaration & consent</strong> — you confirm you are an adult
+            and accept these Terms and the Privacy Policy (recorded with a timestamp and
+            IP address).
+          </li>
+          <li>
+            <strong>Verification photo</strong> — a clear, frontal selfie from which a
+            unique facial fingerprint is derived (see the Privacy Policy).
+          </li>
+          <li>
+            <strong>Government ID</strong> — an upload of your driver's license,
+            passport, or national ID. We read the date of birth printed on it to confirm
+            18+ and match the portrait against your verification photo.
+          </li>
+          <li>
+            <strong>Liveness check</strong> — a short live camera check (e.g. blinking)
+            to confirm a real person, not a photograph, is registering.
+          </li>
+        </ul>
+        <p>
+          Uploaded ID documents are stored privately and are never shown publicly. We
+          may suspend accounts that do not complete verification.
+        </p>
+      </section>
+
+      <section>
+        <h2 className="text-lg font-bold text-pink-400 mb-2">3A. One Account Per Person</h2>
+        <p>
+          Proximity allows one account per person. To enforce this we use the facial
+          fingerprint derived from your verification photo to detect duplicate-account
+          attempts with the same face, and we record a hash of each government-issued ID
+          to prevent the same document being used on multiple accounts. If the same face
+          or the same ID document is detected on another account, the later account will
+          be refused or removed.
         </p>
       </section>
 

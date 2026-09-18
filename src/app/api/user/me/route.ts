@@ -54,7 +54,7 @@ export async function GET() {
 
     const user = await db.user.findUnique({
       where: { id: session.id },
-      include: { profile: true, preferences: true },
+      include: { profile: true, preferences: true, verification: true },
     });
 
     if (!user) {

@@ -24,8 +24,10 @@ export default function PrivacyPage() {
           </li>
           <li>
             <strong>Verification data:</strong> your 18+ declaration, Terms & Privacy
-            consent with timestamp, Terms version, the IP address used to consent, and
-            your verification photo.
+            consent with timestamp, Terms version, the IP address used to consent, your
+            verification photo, your government-issued ID upload and the date of birth
+            read from it, the comment of your liveness check, and the facial fingerprint
+            described in the biometrics section below.
           </li>
           <li>
             <strong>Profile & social data:</strong> bio, photos, location you provide,
@@ -66,6 +68,40 @@ export default function PrivacyPage() {
       </section>
 
       <section>
+        <h2 className="text-lg font-bold text-pink-400 mb-2">3A. Facial Recognition & Biometric Data</h2>
+        <p>
+          To keep Proximity an adult, real-people community we process a small amount of
+          biometric data, transparently:
+        </p>
+        <ul className="list-disc pl-5 space-y-1">
+          <li>
+            <strong>Facial fingerprint</strong> — a mathematical embedding (1,024 numbers)
+            derived from your verification photo using a FaceNet recognition model. You
+            cannot reconstruct a face from an embedding. It is used only to (a) verify the
+            photo shows one, real, frontal face and (b) detect the same face registering
+            more than one account (one account per person).
+          </li>
+          <li>
+            <strong>Government-ID document</strong> — an image of your driver's license,
+            passport, or national ID. We read the printed date of birth to confirm 18+ and
+            match the portrait to your verification photo. The image is stored privately on
+            our servers, is never displayed publicly, and is not served to any URL.
+          </li>
+          <li>
+            <strong>Liveness result</strong> — a pass/fail outcome and blink count from a
+            live camera check. The raw frames are processed on our server to detect a live
+            person and are not retained.
+          </li>
+        </ul>
+        <p>
+          We do not sell biometric data, use it for advertising, or share it for any
+          third-party identification purpose. You may delete your account at any time to
+          have this data removed. We may retain a hash or embedding where needed to
+          prevent duplicate accounts and to comply with law, as described under Retention.
+        </p>
+      </section>
+
+      <section>
         <h2 className="text-lg font-bold text-pink-400 mb-2">4. How We Share Data</h2>
         <p>
           We do not sell your personal data. We share data only with:
@@ -90,10 +126,11 @@ export default function PrivacyPage() {
       <section>
         <h2 className="text-lg font-bold text-pink-400 mb-2">6. Security</h2>
         <p>
-          Passwords are hashed and never stored in plain text. Verification photos are
-          stored privately and are not shown to other members. Communications between your
-          browser and the platform are encrypted. No method of transmission is 100%
-          secure; we work hard to protect your data but cannot guarantee absolute security.
+          Passwords are hashed and never stored in plain text. Verification photos and
+          uploaded ID documents are stored privately and are never exposed through any
+          public URL or shown to other members. Communications between your browser and
+          the platform are encrypted. No method of transmission is 100% secure; we work
+          hard to protect your data but cannot guarantee absolute security.
         </p>
       </section>
 
@@ -111,8 +148,11 @@ export default function PrivacyPage() {
         <h2 className="text-lg font-bold text-pink-400 mb-2">8. Retention</h2>
         <p>
           We keep account and verification data for as long as your account is active.
-          Consent and verification records may be retained for a reasonable period after
-          account deletion where needed to defend legal claims or comply with law.
+          A redacted hash of your ID document and your facial fingerprint may be retained
+          after account deletion where needed to prevent re-registration and duplicate
+          accounts, or to defend legal claims and comply with law. Consent and
+          verification records may be retained for a reasonable period after account
+          deletion for the same purposes. Liveness frames are not retained.
         </p>
       </section>
 
