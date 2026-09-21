@@ -4,7 +4,7 @@ import tailwindcssAnimate from "tailwindcss-animate";
 const config: Config = {
     darkMode: "class",
     content: [
-    "./pages/**/*.{js,ts,jsx,tsx,mdx}",
+    "./src/**/*.{js,ts,jsx,tsx,mdx}",
     "./components/**/*.{js,ts,jsx,tsx,mdx}",
     "./app/**/*.{js,ts,jsx,tsx,mdx}",
   ],
@@ -78,6 +78,10 @@ const config: Config = {
                                 900: '#581c87',
                                 950: '#3b0764',
                         }
+                },
+                backgroundImage: {
+                        'gradient-radial': 'radial-gradient(var(--tw-gradient-stops))',
+                        'gradient-conic': 'conic-gradient(from 180deg at 50% 50%, var(--tw-gradient-stops))',
                 },
                 borderRadius: {
                         lg: 'var(--radius)',

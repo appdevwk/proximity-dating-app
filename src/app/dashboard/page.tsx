@@ -7,19 +7,10 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import {
-  Heart,
-  MessageCircle,
-  MessagesSquare,
-  ShieldCheck,
-  Sparkles,
-  UserRound,
-  Settings,
-  MapPin,
-  ArrowRight,
-} from 'lucide-react';
+import { AdBanner, AdInterstitial } from '@/components/ad-manager';
 import { useSession } from '@/hooks/use-session';
 import type { Conversation, MatchSummary, UserMe } from '@/lib/types';
+import { Heart, MessageCircle, MessagesSquare, ShieldCheck, Sparkles, UserRound, Settings, MapPin, ArrowRight } from 'lucide-react';
 
 export default function DashboardPage() {
   const router = useRouter();
@@ -59,7 +50,7 @@ export default function DashboardPage() {
 
   if (status === 'loading' || loading) {
     return (
-      <div className="min-h-screen bg-black text-white">
+      <div className="min-h-screen" style={{ background: 'linear-gradient(90deg, rgba(85,0,137,1) 0%, rgba(120,0,123,1) 75%, rgba(85,0,137,1) 100%)' }}>
         <Navigation currentPath="/dashboard" />
         <div className="flex items-center justify-center min-h-[60vh]">
           <div className="text-pink-500 animate-pulse">Loading your dashboard…</div>
@@ -72,35 +63,35 @@ export default function DashboardPage() {
   const totalUnread = conversations.reduce((sum, entry) => sum + entry.unreadCount, 0);
 
   return (
-    <div className="min-h-screen bg-black text-white">
-      <Navigation currentPath="/dashboard" />
+    <div className="min-h-screen" style={{ background: 'linear-gradient(90deg, rgba(85,0,137,1) 0%, rgba(120,0,123,1) 75%, rgba(85,0,137,1) 100%)' }}>
+       <Navigation currentPath="/dashboard" />
 
-      <div className="max-w-5xl mx-auto px-4 py-6 md:py-8 space-y-6">
-        <div className="flex items-center justify-between flex-wrap gap-3">
-          <div>
-            <h1 className="text-3xl md:text-4xl font-black text-pink-500" style={{ textShadow: '0 0 15px rgba(236,72,153,0.6)' }}>
-              Welcome back 👋
-            </h1>
-            <p className="text-gray-400 mt-1">
-              {me?.profile?.displayName ?? me?.user.name ?? me?.user.email}
-            </p>
+       <div className="max-w-5xl mx-auto px-4 py-6 md:py-8 space-y-6">
+         <div className="flex items-center justify-between flex-wrap gap-3">
+           <div>
+             <h1 className="text-3xl md:text-4xl font-black text-pink-500" style={{ textShadow: '0 0 15px rgba(236,72,153,0.6)' }}>
+               Welcome back 👋
+             </h1>
+             <p className="text-gray-400 mt-1">
+               {me?.profile?.displayName ?? me?.user.name ?? me?.user.email}
+             </p>
+           </div>
+           <div className="flex gap-2">
+             <Button
+               onClick={() => router.push('/profile')}
+               className="bg-gradient-to-r from-pink-600 to-purple-600 hover:from-pink-700 hover:to-purple-700"
+             >
+               <Heart className="w-4 h-4 mr-2" />
+               Discover
+             </Button>
+             <Button variant="outline" onClick={() => router.push('/profile/edit')}>
+               <Settings className="w-4 h-4 mr-2" />
+               Edit Profile
+              </Button>
+            </div>
           </div>
-          <div className="flex gap-2">
-            <Button
-              onClick={() => router.push('/profile')}
-              className="bg-gradient-to-r from-pink-600 to-purple-600 hover:from-pink-700 hover:to-purple-700"
-            >
-              <Heart className="w-4 h-4 mr-2" />
-              Discover
-            </Button>
-            <Button variant="outline" onClick={() => router.push('/profile/edit')}>
-              <Settings className="w-4 h-4 mr-2" />
-              Edit Profile
-            </Button>
-          </div>
-        </div>
 
-        {me?.verification && !me.verification.verified && (
+          {me?.verification && !me.verification.verified && (
           <div className="flex items-center gap-3 bg-amber-500/10 border border-amber-600/40 rounded-xl px-4 py-3">
             <ShieldCheck className="w-5 h-5 text-amber-400 flex-shrink-0" />
             <p className="text-sm text-amber-200 flex-1">
@@ -304,6 +295,11 @@ export default function DashboardPage() {
             </CardContent>
           </Card>
         </div>
+        <div className="text-center py-6">
+          <AdBanner slot="1234567892" />
+        </div>
+        <AdBanner slot="1234567893" />
+        <AdInterstitial slot="1234567895" />
       </div>
     </div>
   );

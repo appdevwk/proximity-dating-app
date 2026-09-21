@@ -4,17 +4,19 @@ import { mkdir, writeFile } from 'fs/promises';
 import path from 'path';
 import { db } from '@/lib/db';
 import { getSessionUser } from '@/lib/auth';
-import {
-  analyzeFace,
-  prepareAnalysisBuffer,
-  serializeFingerprint,
-  deserializeFingerprint,
-  fingerprintDistance,
-  FINGERPRINT_VERSION,
-  DEDUPE_DISTANCE_THRESHOLD,
-} from '@/lib/services/face-fingerprint';
 
 export const runtime = 'nodejs';
+export const dynamic = 'force-dynamic';
+
+let faceFns: any = null;
+
+async function getFaceFns() {
+  if (!faceFns) {
+    const mod = await import('@/lib/services/face-fingerprint');
+    faceFns = mod;
+  }
+  return faceFns;
+}
 
 const MAX_SIZE_BYTES = 5 * 1024 * 1024; // 5 MB
 const ALLOWED_TYPES = new Map<string, string>([
@@ -25,12 +27,7 @@ const ALLOWED_TYPES = new Map<string, string>([
 
 /**
  * Verification photo upload (selfie / face photo). Submitting a verification
- * photo is part of the profile verification flow: it gives the community a
- * face to match the profile, is recorded with a timestamp, and — since the
- * face-recognition upgrade — is actively analyzed to:
- *   1. prove the photo contains exactly one, sharp, frontal face;
- *   2. extract a unique FaceNet 128-d facial fingerprint; and
- *   3. block the same face from creating duplicate accounts (dedupe).
+ * photo is part of the profile verification flow.
  */
 export async function POST(request: NextRequest) {
   try {
@@ -66,9 +63,11 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    const face = await getFaceFns();
+
     // Real face-recognition check: single, frontal, sharp face + 128-d fingerprint.
-    const prepared = await prepareAnalysisBuffer(fileBuffer);
-    const analysis = await analyzeFace(prepared);
+    const prepared = await face.prepareAnalysisBuffer(fileBuffer);
+    const analysis = await face.analyzeFace(prepared);
     if (!analysis.ok) {
       return NextResponse.json(
         { error: analysis.message, code: analysis.code },
@@ -76,7 +75,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const fingerprint = serializeFingerprint(analysis.descriptor, {
+    const fingerprint = face.serializeFingerprint(analysis.descriptor, {
       confidence: analysis.confidence,
       faceSize: analysis.faceSize,
       sharpness: analysis.sharpness,
@@ -97,16 +96,16 @@ export async function POST(request: NextRequest) {
     let closestDistance = 1;
     let matchUserId: string | null = null;
     for (const candidate of existing) {
-      const other = deserializeFingerprint(candidate.faceFingerprint);
+      const other = face.deserializeFingerprint(candidate.faceFingerprint);
       if (!other) continue;
-      const distance = fingerprintDistance(analysis.descriptor, other);
+      const distance = face.fingerprintDistance(analysis.descriptor, other);
       if (distance < closestDistance) {
         closestDistance = distance;
         matchUserId = candidate.id;
       }
     }
 
-    const duplicate = closestDistance <= DEDUPE_DISTANCE_THRESHOLD;
+    const duplicate = closestDistance <= face.DEDUPE_DISTANCE_THRESHOLD;
 
     const filename = `verification-${Date.now()}-${randomUUID()}.${extension}`;
     const uploadRoot = path.join(process.cwd(), 'public', 'uploads', 'profiles');
@@ -118,7 +117,6 @@ export async function POST(request: NextRequest) {
     const now = new Date();
 
     if (duplicate) {
-      // Audit the attempt as REJECTED; never flip photoVerified.
       await db.verification.upsert({
         where: { userId: session.id },
         update: {
@@ -171,7 +169,7 @@ export async function POST(request: NextRequest) {
           photoVerified: true,
           photoSubmittedAt: now,
           faceFingerprint: fingerprint,
-          faceFingerprintVersion: FINGERPRINT_VERSION,
+          faceFingerprintVersion: face.FINGERPRINT_VERSION,
         },
       }),
       db.media.create({
@@ -218,7 +216,7 @@ export async function POST(request: NextRequest) {
         'Verification photo submitted. Your face fingerprint was recorded and your profile is now photo-verified.',
       photoVerified: updatedUser.photoVerified,
       fingerprint: {
-        version: FINGERPRINT_VERSION,
+        version: face.FINGERPRINT_VERSION,
         closestDistance: Number(closestDistance.toFixed(3)),
       },
     });

@@ -11,6 +11,7 @@ import { Card } from '@/components/ui/card';
 import { ArrowLeft, MessageCircle, Send, ShieldCheck, Heart } from 'lucide-react';
 import { useSession } from '@/hooks/use-session';
 import type { Conversation, ConversationUser, MessageOut } from '@/lib/types';
+import { AdBanner } from '@/components/ad-manager';
 
 const POLL_INTERVAL = 3000;
 
@@ -181,7 +182,7 @@ export default function MessagesPage() {
   }
 
   return (
-    <div className="min-h-screen bg-black text-white">
+    <div className="min-h-screen" style={{ background: 'linear-gradient(90deg, rgba(85,0,137,1) 0%, rgba(120,0,123,1) 75%, rgba(85,0,137,1) 100%)' }}>
       <Navigation currentPath="/messages" />
 
       <div className="max-w-5xl mx-auto px-0 md:px-4 py-4 md:py-6">
@@ -358,6 +359,10 @@ export default function MessagesPage() {
             )}
           </div>
         </div>
+        <div className="text-center py-6">
+          <AdBanner slot="1234567892" />
+        </div>
+        <AdBanner slot="1234567894" />
       </div>
     </div>
   );

@@ -8,8 +8,8 @@
   "display": "standalone",
   "orientation": "portrait",
   "categories": ["social", "dating", "lifestyle"],
-  "theme_color": "#171023",
-  "background_color": "#171023",
+  "theme_color": "#000000",
+  "background_color": "#000000",
   "icons": [
     {
       "src": "/icons/icon-192.png",

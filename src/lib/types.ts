@@ -1,10 +1,13 @@
 export type UserRoleValue = 'USER' | 'ADMIN';
+export type SiteModeValue = 'mainstream' | 'adult' | 'both';
 
 export type SessionUser = {
   id: string;
   email: string;
   name?: string | null;
   role: UserRoleValue;
+  siteMode?: SiteModeValue;
+  emailVerified?: boolean;
 };
 
 export type GenderValue = 'MALE' | 'FEMALE' | 'NON_BINARY' | 'OTHER';

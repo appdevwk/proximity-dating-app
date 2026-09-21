@@ -1,0 +1,4 @@
+# Copy this file to `local.properties` and point sdk.dir at your Android SDK.
+sdk.dir=/home/lexii/Android/Sdk
+# Point this at your own machine when debugging against a local backend.
+# api.base.url=http://10.0.2.2:3000

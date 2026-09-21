@@ -8,6 +8,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Card } from '@/components/ui/card';
+import { AdBanner } from '@/components/ad-manager';
 import {
   Heart,
   X,
@@ -123,7 +124,7 @@ export default function ProfilePage() {
   }
 
   return (
-    <div className="min-h-screen bg-black text-white">
+    <div className="min-h-screen" style={{ background: 'linear-gradient(90deg, rgba(85,0,137,1) 0%, rgba(120,0,123,1) 75%, rgba(85,0,137,1) 100%)' }}>
       <Navigation currentPath="/profile" />
 
       <div
@@ -405,6 +406,10 @@ function MatchOverlay({
           </Button>
         </div>
       </motion.div>
+      <div className="text-center py-6">
+        <AdBanner slot="1234567892" />
+      </div>
+      <AdBanner slot="1234567894" />
     </motion.div>
   );
 }

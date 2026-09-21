@@ -7,6 +7,8 @@ import {
   signSessionToken,
 } from '@/lib/auth';
 import { TERMS_VERSION, clientIpFromRequest } from '@/lib/verification';
+import { sendEmail, welcomeEmail, emailVerifyEmail, generateCode } from '@/lib/email';
+import crypto from 'crypto';
 
 const registerSchema = z.object({
   email: z.string().email(),
@@ -18,7 +20,8 @@ const registerSchema = z.object({
   }),
   termsAccepted: z.boolean().refine(val => val === true, {
     message: "You must accept the Terms of Service and Privacy Policy"
-  })
+  }),
+  siteMode: z.enum(['mainstream', 'adult', 'both']).default('both'),
 });
 
 export async function POST(request: NextRequest) {
@@ -60,6 +63,14 @@ export async function POST(request: NextRequest) {
 
     const consentIp = clientIpFromRequest(request);
 
+    // Email verification: generate a short-lived numeric code, stored hashed.
+    const emailVerifyCode = generateCode();
+    const emailVerifyToken = crypto
+      .createHash('sha256')
+      .update(emailVerifyCode)
+      .digest('hex');
+    const emailVerifyExpires = new Date(Date.now() + 30 * 60 * 1000);
+
     // Create user. The member has explicitly (1) declared they are 18+, and
     // (2) accepted the Terms & Privacy Policy — this is recorded as auditable,
     // timestamped consent, the industry-standard age/consent gate for adult
@@ -76,6 +87,10 @@ export async function POST(request: NextRequest) {
         termsAcceptedAt: new Date(),
         termsVersion: TERMS_VERSION,
         consentIp,
+        siteMode: validatedData.siteMode,
+        emailVerified: false,
+        emailVerifyToken,
+        emailVerifyTokenExpires: emailVerifyExpires,
       },
       select: {
         id: true,
@@ -110,17 +125,38 @@ export async function POST(request: NextRequest) {
       }
     });
 
+    const siteModeLabel =
+      validatedData.siteMode === 'adult'
+        ? 'Adult'
+        : validatedData.siteMode === 'mainstream'
+          ? 'Mainstream'
+          : 'Combined Mainstream + Adult';
+
+    // Autoresponders (fire-and-forget; never fail registration on email issues).
+    void sendEmail({
+      to: user.email,
+      subject: 'Welcome to Proximity!',
+      html: welcomeEmail(user.name ?? 'friend', siteModeLabel),
+    }).catch(() => {});
+    void sendEmail({
+      to: user.email,
+      subject: 'Your Proximity verification code',
+      html: emailVerifyEmail(user.name ?? 'friend', emailVerifyCode),
+    }).catch(() => {});
+
     // Sign a session cookie so the user is logged in immediately after registering.
     const token = await signSessionToken({
       id: user.id,
       email: user.email,
       name: user.name,
       role: user.role ?? 'USER',
+      siteMode: validatedData.siteMode,
+      emailVerified: false,
     });
 
     const response = NextResponse.json({
       message: 'Registration successful. Welcome to Proximity!',
-      user: { ...user, ageDeclarationConfirmed: true, termsAccepted: true, termsVersion: TERMS_VERSION },
+      user: { ...user, siteMode: validatedData.siteMode, ageDeclarationConfirmed: true, termsAccepted: true, termsVersion: TERMS_VERSION },
       requiresAgeVerification: false,
       requiresProfileVerification: true,
       session: 'created'

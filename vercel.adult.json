@@ -1,0 +1,14 @@
+{
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "framework": "nextjs",
+  "buildCommand": "npx prisma generate && next build",
+  "devCommand": "next dev",
+  "installCommand": "npm install",
+  "env": {
+    "DATABASE_URL": "postgresql://postgres:postgres@localhost:5432/proximity_dating?schema=public",
+    "NEXTAUTH_SECRET": "proximity-local-dev-secret",
+    "NEXT_PUBLIC_SITE_MODE": "adult",
+    "NEXT_PUBLIC_AD_SENSE_CLIENT_ID": "",
+    "NEXT_PUBLIC_EXOCLICK_ZONE_ID": "1000000"
+  }
+}

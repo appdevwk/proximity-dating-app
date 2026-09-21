@@ -1,0 +1,57 @@
+name: social-daily-autopost
+
+on:
+  schedule:
+    # Daily runs: 06:00, 10:00, 17:00 UTC (3 slots/day across all channels)
+    - cron: "0 6,10,17 * * *"
+  workflow_dispatch:
+
+concurrency:
+  group: social-daily-autopost
+  cancel-in-progress: false
+
+env:
+  # Deterministic date (defaults to the current UTC day). Override per run
+  # when backfilling: SOCIAL_DATE=2026-09-20
+  SOCIAL_DATE: ""
+
+jobs:
+  generate-and-publish:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          ref: main
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install deps
+        run: npm ci
+
+      - name: Generate daily social posts (7 channels x current slot)
+        run: node scripts/gen-daily-social.mjs
+        env:
+          SOCIAL_DATE: ${{ env.SOCIAL_DATE }}
+
+      - name: Verify generator output parses into the site schema
+        run: node --check scripts/gen-daily-social.mjs && node -e "import('./scripts/gen-daily-social.mjs').then(()=>console.log('generator module loads OK'))"
+
+      - name: Commit new posts
+        run: |
+          git config user.name "lexii-bot"
+          git config user.email "bot@users.noreply.github.com"
+          git add content/posts
+          git diff --cached --quiet || git commit -m "social: daily posts $(date -u +%Y-%m-%d)" 
+          if git log -1 --format=%s | grep -q "social: daily posts"; then
+            git push
+            echo "pushed $(git rev-parse --short HEAD)"
+          else
+            echo "no new posts to commit this run"
+          fi

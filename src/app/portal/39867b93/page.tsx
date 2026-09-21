@@ -72,8 +72,8 @@ export default function AdminPage() {
 
   if (status === 'loading' || loading) {
     return (
-      <div className="min-h-screen bg-black text-white">
-        <Navigation currentPath="/admin" />
+      <div className="min-h-screen" style={{ background: 'linear-gradient(90deg, rgba(85,0,137,1) 0%, rgba(120,0,123,1) 75%, rgba(85,0,137,1) 100%)' }}>
+        <Navigation currentPath="/portal/39867b93" />
         <div className="flex items-center justify-center min-h-[60vh]">
           <div className="text-pink-500 animate-pulse">Loading admin data…</div>
         </div>
@@ -83,8 +83,8 @@ export default function AdminPage() {
 
   if (forbidden || (isAuthedAndNotAdmin)) {
     return (
-      <div className="min-h-screen bg-black text-white">
-        <Navigation currentPath="/admin" />
+      <div className="min-h-screen" style={{ background: 'linear-gradient(90deg, rgba(85,0,137,1) 0%, rgba(120,0,123,1) 75%, rgba(85,0,137,1) 100%)' }}>
+        <Navigation currentPath="/portal/39867b93" />
         <div className="flex flex-col items-center justify-center min-h-[70vh] gap-4 px-4 text-center">
           <div className="w-20 h-20 rounded-full bg-pink-600/20 border border-pink-800 flex items-center justify-center">
             <Shield className="w-10 h-10 text-pink-500" />
@@ -112,8 +112,8 @@ export default function AdminPage() {
   });
 
   return (
-    <div className="min-h-screen bg-black text-white">
-      <Navigation currentPath="/admin" />
+    <div className="min-h-screen" style={{ background: 'linear-gradient(90deg, rgba(85,0,137,1) 0%, rgba(120,0,123,1) 75%, rgba(85,0,137,1) 100%)' }}>
+      <Navigation currentPath="/portal/39867b93" />
 
       <div className="max-w-6xl mx-auto px-4 py-6 md:py-8 space-y-6">
         <div className="flex items-center justify-between flex-wrap gap-3">

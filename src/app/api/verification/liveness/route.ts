@@ -1,14 +1,30 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db';
 import { getSessionUser } from '@/lib/auth';
-import {
-  createLivenessChallenge,
-  verifyLiveness,
-} from '@/lib/services/liveness';
 
 export const runtime = 'nodejs';
+export const dynamic = 'force-dynamic';
 
-const MAX_TOTAL_FRAMES_BYTES = 12 * 1024 * 1024; // generous cap across all frames
+const MAX_TOTAL_FRAMES_BYTES = 12 * 1024 * 1024;
+
+let verifyLivenessFn: ((frames: Buffer[], nonce: string, userId: string) => Promise<any>) | null = null;
+let createChallengeFn: ((userId: string) => any) | null = null;
+
+async function getVerifyLiveness() {
+  if (!verifyLivenessFn) {
+    const { verifyLiveness } = await import('@/lib/services/liveness');
+    verifyLivenessFn = verifyLiveness;
+  }
+  return verifyLivenessFn!;
+}
+
+async function getCreateChallenge() {
+  if (!createChallengeFn) {
+    const { createLivenessChallenge } = await import('@/lib/services/liveness');
+    createChallengeFn = createLivenessChallenge;
+  }
+  return createChallengeFn!;
+}
 
 /**
  * Liveness check (anti-photo-spoof). GET issues a single-use challenge with a
@@ -22,7 +38,8 @@ export async function GET() {
     if (!session) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
-    const challenge = createLivenessChallenge(session.id);
+    const createChallenge = await getCreateChallenge();
+    const challenge = createChallenge(session.id);
     return NextResponse.json({
       ...challenge,
       instructions:
@@ -75,6 +92,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    const verifyLiveness = await getVerifyLiveness();
     const result = await verifyLiveness(frames, nonce, session.id);
     if (!result.ok) {
       return NextResponse.json(

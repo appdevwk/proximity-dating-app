@@ -1,61 +1,67 @@
 import sharp from 'sharp';
-import { mkdir } from 'fs/promises';
+import { mkdir, copyFile } from 'fs/promises';
 import { fileURLToPath } from 'url';
 
 const OUT = fileURLToPath(new URL('../public/icons/', import.meta.url));
 const path = (name) => `${OUT}${name}`;
 
-// Brand mark: the geometric emblem from public/logo.svg, redrawn flat in warm
-// brand tones on a dark rounded square. Maskable variant keeps the emblem
-// inside the 80% safe circle (crops applied by Android launchers).
-const emblem = (scale, yOffset) => `
-<g transform="translate(0 ${yOffset}) scale(${scale})">
-  <polygon fill="url(#e1)"  points="1008.73 0 827.29 251.03 54.43 251.03 235.74 0 1008.73 0"/>
-  <polygon fill="url(#e2)"  points="1937.79 1449.1 1756.47 1700 986.3 1700 1167.48 1449.1 1937.79 1449.1"/>
-  <polygon fill="url(#e3)"  points="2000 0 771.98 1700 0 1700 1228.02 0 2000 0"/>
-</g>
-<defs>
-  <linearGradient id="e1" x1="500" y1="0" x2="500" y2="1700" gradientUnits="userSpaceOnUse">
-    <stop offset="0" stop-color="#ff5a52"/><stop offset="1" stop-color="#d6372f"/>
-  </linearGradient>
-  <linearGradient id="e2" x1="1450" y1="0" x2="1450" y2="1700" gradientUnits="userSpaceOnUse">
-    <stop offset="0" stop-color="#ffb24d"/><stop offset="1" stop-color="#e0813a"/>
-  </linearGradient>
-  <linearGradient id="e3" x1="1000" y1="0" x2="1000" y2="1700" gradientUnits="userSpaceOnUse">
-    <stop offset="0" stop-color="#ff8a5c"/><stop offset="1" stop-color="#f04a3a"/>
-  </linearGradient>
-</defs>`;
+// Brand mark: a capital "P" — a ring bowl joined by a vertical stem — filled
+// with a pink -> red gradient (rotating through several colors) on pure black.
+const P_LETTER = `
+<g stroke="url(#pg)" fill="none" stroke-linecap="round">
+  <path stroke-width="60" d="M 166 133.5 A 97 97 0 1 1 166 230.5"/>
+  <path stroke-width="66" d="M 170 112 L 170 427"/>
+</g>`;
+
+// Static gradient for PNG renders: pink -> hot pink -> magenta -> rose -> red.
+const P_GRADIENT = `
+<linearGradient id="pg" x1="0" y1="0" x2="0.4" y2="1" gradientUnits="objectBoundingBox">
+  <stop offset="0"    stop-color="#ff8ac2"/>
+  <stop offset="0.3"  stop-color="#ff2ea6"/>
+  <stop offset="0.55" stop-color="#e6007c"/>
+  <stop offset="0.8"  stop-color="#f43b3b"/>
+  <stop offset="1"    stop-color="#d92a2a"/>
+</linearGradient>`;
 
 function svg(inner, bg = 'linear') {
   const stops = bg === 'flat'
-    ? '<stop offset="0" stop-color="#171023"/><stop offset="1" stop-color="#171023"/>'
-    : '<stop offset="0" stop-color="#241233"/><stop offset="1" stop-color="#100a1a"/>';
+    ? '<stop offset="0" stop-color="#000000"/><stop offset="1" stop-color="#000000"/>'
+    : '<stop offset="0" stop-color="#050505"/><stop offset="1" stop-color="#000000"/>';
   return `<svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 512 512">
   <defs>
-    <linearGradient id="bg" x1="0" y1="0" x2="512" y2="512" gradientUnits="userSpaceOnUse">
+    ${P_GRADIENT}
+    <linearGradient id="sb" x1="0" y1="0" x2="512" y2="512" gradientUnits="userSpaceOnUse">
       ${stops}
     </linearGradient>
+    <filter id="glow" x="-40%" y="-40%" width="180%" height="180%">
+      <feGaussianBlur stdDeviation="10" result="b"/>
+      <feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge>
+    </filter>
   </defs>
-  <rect width="512" height="512" fill="url(#bg)"/>
-  ${inner}
+  <rect width="512" height="512" fill="url(#sb)"/>
+  <g filter="url(#glow)">${inner}</g>
 </svg>`;
 }
 
 await mkdir(OUT, { recursive: true });
 
-// Legacy (rounded-rect, full-bleed artwork, emblem ~78% of canvas).
+// Legacy (rounded-rect, full-bleed P ~78% of canvas).
 const legacy = svg(`<clipPath id="rn"><rect x="0" y="0" width="512" height="512" rx="112"/></clipPath>
-<g clip-path="url(#rn)">${emblem(0.256, 46)}</g>`);
+<g clip-path="url(#rn)">${P_LETTER}</g>`);
 await sharp(Buffer.from(legacy)).png().toFile(path('icon-512.png'));
 await sharp(Buffer.from(legacy)).resize(192, 192).png().toFile(path('icon-192.png'));
 
-// Maskable (full square; emblem scaled to ~60% = inside the 80% safe zone).
-const maskable = svg(`${emblem(0.196, 0)}`, 'flat');
+// Maskable (full square; P kept inside the 80% safe zone).
+const maskable = svg(`${P_LETTER}`, 'flat');
 await sharp(Buffer.from(maskable)).png().toFile(path('maskable-512.png'));
 
-// Adaptive-icon foreground: emblem only, transparent, on a 432px (=108dp@xxxhdpi) canvas.
+// Adaptive-icon foreground: P only, transparent, on a 432px (=108dp@xxxhdpi) canvas.
 const adaptiveFg = `<svg xmlns="http://www.w3.org/2000/svg" width="432" height="432" viewBox="0 0 432 432">
-  ${emblem(0.5, 26)}
+  <defs>${P_GRADIENT}</defs>
+  <g stroke="url(#pg)" fill="none" stroke-linecap="round" transform="translate(36 28) scale(0.875)">
+    <path stroke-width="60" d="M 166 133.5 A 97 97 0 1 1 166 230.5"/>
+    <path stroke-width="66" d="M 170 112 L 170 410"/>
+  </g>
 </svg>`;
 await sharp(Buffer.from(adaptiveFg)).png().toFile(path('adaptive-fg.png'));
 
@@ -66,5 +72,8 @@ if (tile) {
     await sharp(tile).resize(px, px).png().toFile(path(`ic_launcher_${dp}.png`));
   }
 }
+
+// Root non-webmanifest icon + favicon source.
+await copyFile(path('icon-512.png'), fileURLToPath(new URL('../public/icon.png', import.meta.url)));
 
 console.log('icons written to', OUT);

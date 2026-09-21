@@ -1,9 +1,10 @@
 import { Metadata } from 'next';
 import { LegalShell } from '@/components/legal-shell';
+import { isAdult } from '@/lib/site-config';
 
 export const metadata: Metadata = {
   title: 'Privacy Policy - Proximity',
-  description: 'Proximity Privacy Policy for the 18+ adult dating app.',
+  description: 'Proximity Privacy Policy for the dating app.',
 };
 
 export default function PrivacyPage() {
@@ -11,8 +12,7 @@ export default function PrivacyPage() {
     <LegalShell title="Privacy Policy" updatedLabel="September 18, 2026 (v2.0)">
       <p>
         This Privacy Policy explains what information Proximity collects, why we collect
-        it, and how you can control it. Because Proximity is an adult dating platform we
-        pay particular attention to age verification and consent records.
+        it, and how you can control it.{isAdult ? ' Because Proximity is an adult dating platform we pay particular attention to age verification and consent records.' : ''}
       </p>
 
       <section>

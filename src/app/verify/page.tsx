@@ -8,6 +8,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Badge } from '@/components/ui/badge';
 import { Checkbox } from '@/components/ui/checkbox';
 import { LivenessCamera } from '@/components/liveness-camera';
+import { AdBanner } from '@/components/ad-manager';
 import Link from 'next/link';
 import {
   ShieldCheck,
@@ -192,7 +193,7 @@ export default function VerifyPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-black text-white">
+      <div className="min-h-screen" style={{ background: 'linear-gradient(90deg, rgba(85,0,137,1) 0%, rgba(120,0,123,1) 75%, rgba(85,0,137,1) 100%)' }}>
         <Navigation currentPath="/verify" />
         <div className="flex items-center justify-center min-h-[60vh]">
           <div className="text-pink-500 animate-pulse">Checking verification…</div>
@@ -205,10 +206,10 @@ export default function VerifyPage() {
   const fullyVerified = verification?.fullyVerified === true;
 
   return (
-    <div className="min-h-screen bg-black text-white">
-      <Navigation currentPath="/verify" />
+    <div className="min-h-screen" style={{ background: 'linear-gradient(90deg, rgba(85,0,137,1) 0%, rgba(120,0,123,1) 75%, rgba(85,0,137,1) 100%)' }}>
+       <Navigation currentPath="/verify" />
 
-      <div className="max-w-3xl mx-auto px-4 py-6 md:py-8 space-y-6">
+       <div className="max-w-3xl mx-auto px-4 py-6 md:py-8 space-y-6">
         <div className="text-center space-y-2">
           <h1 className="text-3xl md:text-4xl font-black text-pink-500" style={{ textShadow: '0 0 15px rgba(236,72,153,0.6)' }}>
             Profile Verification
@@ -485,6 +486,10 @@ export default function VerifyPage() {
             )}
           </CardContent>
         </Card>
+        <div className="text-center py-6">
+          <AdBanner slot="1234567892" />
+        </div>
+        <AdBanner slot="1234567894" />
       </div>
     </div>
   );

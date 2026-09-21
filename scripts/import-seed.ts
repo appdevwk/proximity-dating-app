@@ -83,6 +83,7 @@ async function main() {
         updatedAt: new Date(u.updatedAt),
       },
     });
+    existingUsers.add(u.id);
     users++;
   }
   console.log(`users added: ${users}`);

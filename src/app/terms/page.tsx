@@ -1,17 +1,18 @@
 import { Metadata } from 'next';
 import Link from 'next/link';
 import { LegalShell } from '@/components/legal-shell';
+import { isAdult } from '@/lib/site-config';
 
 export const metadata: Metadata = {
   title: 'Terms of Service - Proximity',
-  description: 'Proximity Terms of Service for the 18+ adult dating app.',
+  description: 'Proximity Terms of Service for the dating app.',
 };
 
 export default function TermsPage() {
   return (
     <LegalShell title="Terms of Service" updatedLabel="September 18, 2026 (v2.0)">
       <p>
-        Welcome to Proximity, an 18+ adult dating platform. These Terms of Service
+        Welcome to Proximity, a dating platform for people aged 18 and older. These Terms of Service
         (“Terms”) form a legal agreement between you and Proximity. By registering,
         you confirm you have read, understood, and accepted these Terms and our{" "}
         <Link href="/privacy" className="text-pink-400 underline">
@@ -125,12 +126,19 @@ export default function TermsPage() {
       </section>
 
       <section>
-        <h2 className="text-lg font-bold text-pink-400 mb-2">6. Adult Content</h2>
+        <h2 className="text-lg font-bold text-pink-400 mb-2">6. Content</h2>
         <p>
-          Proximity is an adult dating platform. Profile content must remain consensual
-          and lawful. Explicit imagery is permitted only where legal where you are, only
-          between consenting adults, and never involving minors. We remove unlawful content
-          and cooperate with authorities when required.
+          {isAdult ? (
+            <>Proximity is a dating platform for adults. Profile content must remain consensual
+            and lawful. Explicit imagery is permitted only where legal where you are, only
+            between consenting adults, and never involving minors. We remove unlawful content
+            and cooperate with authorities when required.</>
+          ) : (
+            <>Proximity is a dating platform for adults aged 18 and older. Profile content must
+            remain respectful, consensual, and lawful. Explicit or sexually suggestive imagery is
+            not permitted in profile content. We remove unlawful content and cooperate with
+            authorities when required.</>
+          )}
         </p>
       </section>
 

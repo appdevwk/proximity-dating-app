@@ -79,6 +79,8 @@ export async function POST(request: NextRequest) {
       email: user.email,
       name: user.name,
       role: user.role,
+      siteMode: (user as { siteMode?: 'mainstream' | 'adult' | 'both' }).siteMode ?? 'both',
+      emailVerified: user.emailVerified,
     });
 
     const { password, ...userWithoutPassword } = user;

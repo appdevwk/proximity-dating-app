@@ -9,7 +9,7 @@ generator client {
 }
 
 datasource db {
-  provider = "sqlite"
+  provider = "postgresql"
   url      = env("DATABASE_URL")
 }
 
@@ -56,6 +56,14 @@ model User {
   // burst of webcam frames (blink detection + motion continuity).
   livenessVerified         Boolean  @default(false)
   livenessVerifiedAt       DateTime?
+  // Preferred site version chosen at sign-up: 'mainstream' | 'adult' | 'both'
+  siteMode                 String   @default("both")
+  // Email autoresponder tokens (hashed, short-lived)
+  emailVerifyToken         String?
+  emailVerifyTokenExpires  DateTime?
+  emailVerifiedAt          DateTime?
+  passwordResetToken       String?
+  passwordResetTokenExpires DateTime?
   isActive        Boolean  @default(true)
   isBanned        Boolean  @default(false)
   lastLogin       DateTime?
@@ -79,6 +87,7 @@ model User {
   adSessions      AdSession[]
   adViews         AdView[]
   payments        Payment[]
+  crossPostSubscriptions CrossPostSubscription[]
   devices         Device[]
   pushNotifications PushNotification[]
 
@@ -395,6 +404,108 @@ model Payment {
   user        User          @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@map("payments")
+}
+
+// Cross-posting plans (e.g. "Standard" $4.99/mo for a few sites, "Mega" $19.95/mo for all sites)
+model CrossPostPlan {
+  id            String   @id @default(cuid())
+  name          String
+  slug          String   @unique
+  price         Float
+  currency      String   @default("USD")
+  interval      String   @default("MONTHLY")
+  maxSites      Int
+  description   String
+  active        Boolean  @default(true)
+  sortOrder     Int      @default(0)
+  stripePriceId String?  // Stripe recurring Price ID (created lazily on first checkout)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  // Relations
+  subscriptions CrossPostSubscription[]
+
+  @@map("cross_post_plans")
+}
+
+model CrossPostTarget {
+  id          String   @id @default(cuid())
+  name        String
+  slug        String   @unique
+  externalId  String?
+  active      Boolean  @default(true)
+  popular     Boolean  @default(false)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  // Relations
+  posts        CrossPostSubmission[]
+  subscriptionLinks CrossPostSubscriptionTarget[]
+
+  @@map("cross_post_targets")
+}
+
+model CrossPostSubscription {
+  id               String   @id @default(cuid())
+  userId           String
+  planId           String
+  status           SubscriptionStatus @default(ACTIVE)
+  provider         String   @default("AD_CREDITS") // e.g. AD_CREDITS | STRIPE
+  stripeCustomerId String?  // Stripe customer id for billing/portal
+  stripeSubId      String?  @unique
+  startDate        DateTime @default(now())
+  endDate          DateTime?
+  autoRenew        Boolean  @default(false)
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  // Relations
+  user          User                @relation(fields: [userId], references: [id], onDelete: Cascade)
+  plan          CrossPostPlan       @relation(fields: [planId], references: [id])
+  targetLinks   CrossPostSubscriptionTarget[]
+  submissions   CrossPostSubmission[]
+
+  @@unique([userId, planId])
+  @@map("cross_post_subscriptions")
+}
+
+model CrossPostSubscriptionTarget {
+  id             String   @id @default(cuid())
+  subscriptionId String
+  targetId       String
+  activatedAt    DateTime @default(now())
+
+  // Relations
+  subscription   CrossPostSubscription @relation(fields: [subscriptionId], references: [id], onDelete: Cascade)
+  target         CrossPostTarget       @relation(fields: [targetId], references: [id])
+
+  @@unique([subscriptionId, targetId])
+  @@map("cross_post_subscription_targets")
+}
+
+model CrossPostSubmission {
+  id             String   @id @default(cuid())
+  subscriptionId String
+  targetId       String
+  status         String   @default("PENDING") // PENDING | PUBLISHED | FAILED
+  externalId     String?
+  externalUrl    String?
+  error          String?
+  submittedAt    DateTime @default(now())
+  publishedAt    DateTime?
+
+  // Relations
+  subscription   CrossPostSubscription @relation(fields: [subscriptionId], references: [id], onDelete: Cascade)
+  target         CrossPostTarget       @relation(fields: [targetId], references: [id])
+
+  @@map("cross_post_submissions")
+}
+
+enum SubscriptionStatus {
+  ACTIVE
+  PAST_DUE
+  CANCELED
+  EXPIRED
 }
 
 // Enums for Ad System

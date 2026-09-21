@@ -19,7 +19,8 @@ next-env.d.ts
 # Local configuration and secrets
 .env*
 !.env.example
-.vercel
+.vercel/
+!.vercel/repo.json
 *.pem
 
 # Local/debug files
@@ -53,6 +54,9 @@ npm-audit-*.json
 *.deb
 *.tar.gz
 debian-binary
+
+# Social media credentials (contains live passwords — never commit)
+/secrets/
 
 # Local-only launch helpers and logs
 cloudflared.log

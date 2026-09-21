@@ -1,11 +1,17 @@
 import type { Metadata } from "next";
 import "./globals.css";
 import { Toaster } from "@/components/ui/toaster";
+import { AdManager } from '@/components/ad-manager';
+import { SiteModeProvider } from '@/components/site-mode-provider';
+import { SiteFooter } from '@/components/site-footer';
+import { siteConfig, AD_SENSE_CLIENT_ID } from '@/lib/site-config';
+
+const { title, description, keywords } = siteConfig;
 
 export const metadata: Metadata = {
-  title: "Proximity - 18+ Adult Dating App",
-  description: "Find your perfect match nearby. Advanced dating platform with biometric verification and ad-supported free access.",
-  keywords: ["dating", "adult dating", "proximity", "matchmaking", "relationships", "18+", "biometric verification"],
+  title,
+  description,
+  keywords,
   authors: [{ name: "Proximity Team" }],
   manifest: "/manifest.webmanifest",
   icons: {
@@ -23,14 +29,14 @@ export const metadata: Metadata = {
     title: "Proximity",
   },
   openGraph: {
-    title: "Proximity - Adult Dating App",
-    description: "Find your perfect match nearby with our advanced dating platform",
+    title,
+    description,
     type: "website",
   },
   twitter: {
     card: "summary_large_image",
-    title: "Proximity - Adult Dating App",
-    description: "Find your perfect match nearby",
+    title,
+    description,
   },
 };
 
@@ -44,6 +50,7 @@ export default function RootLayout({
       <head>
         <meta name="theme-color" content="#171023" />
         <link rel="apple-touch-icon" href="/icons/icon-192.png" />
+        <link rel="alternate" type="application/rss+xml" title="Proximity RSS Feed" href="/rss.xml" />
         <script async src="https://www.googletagmanager.com/gtag/js?id=G-FF513PQ8DT" />
         <script
           dangerouslySetInnerHTML={{
@@ -58,12 +65,19 @@ if ('serviceWorker' in navigator) {
 }`,
           }}
         />
+        <script async src={`https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=${AD_SENSE_CLIENT_ID}`}
+          crossOrigin="anonymous" />
       </head>
       <body
-        className="font-sans antialiased bg-background text-foreground"
+        className="font-sans antialiased"
+        style={{ background: 'linear-gradient(90deg, rgba(85,0,137,1) 0%, rgba(120,0,123,1) 75%, rgba(85,0,137,1) 100%)' }}
       >
-        {children}
-        <Toaster />
+        <SiteModeProvider>
+          {children}
+          <SiteFooter />
+          <Toaster />
+          <AdManager />
+        </SiteModeProvider>
       </body>
     </html>
   );

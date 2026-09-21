@@ -26,5 +26,18 @@ jobs:
     - name: Generate Prisma client
       run: npx prisma generate
 
+    - name: Push Prisma schema to database
+      run: npx prisma db push
+      env:
+        DATABASE_URL: ${{ secrets.DATABASE_URL }}
+
     - name: Build application
       run: npm run build
+      env:
+        DATABASE_URL: ${{ secrets.DATABASE_URL }}
+        NEXTAUTH_SECRET: ${{ secrets.NEXTAUTH_SECRET }}
+        AD_SENSE_CLIENT_ID: ${{ secrets.AD_SENSE_CLIENT_ID }}
+
+    - name: Run lint
+      run: npm run lint
+      continue-on-error: true

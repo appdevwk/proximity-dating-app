@@ -2,7 +2,7 @@ import { SignJWT, jwtVerify } from 'jose';
 import { NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
 import { db } from '@/lib/db';
-import type { SessionUser, UserRoleValue } from '@/lib/types';
+import type { SessionUser, SiteModeValue, UserRoleValue } from '@/lib/types';
 
 export const SESSION_COOKIE = 'proximity_session';
 
@@ -28,8 +28,16 @@ export async function signSessionToken(user: {
   email: string;
   name?: string | null;
   role?: UserRoleValue;
+  siteMode?: SiteModeValue;
+  emailVerified?: boolean;
 }): Promise<string> {
-  return new SignJWT({ email: user.email, name: user.name ?? null, role: user.role ?? 'USER' })
+  return new SignJWT({
+    email: user.email,
+    name: user.name ?? null,
+    role: user.role ?? 'USER',
+    siteMode: user.siteMode ?? 'both',
+    emailVerified: user.emailVerified ?? false,
+  })
     .setProtectedHeader({ alg: 'HS256' })
     .setSubject(user.id)
     .setIssuedAt()
@@ -45,11 +53,16 @@ export async function verifySessionToken(token: string): Promise<SessionUser | n
     const email = typeof payload.email === 'string' ? payload.email : '';
     if (!email) return null;
     const role = payload.role === 'ADMIN' ? 'ADMIN' : 'USER';
+    const siteMode = payload.siteMode === 'adult' || payload.siteMode === 'mainstream' || payload.siteMode === 'both'
+      ? payload.siteMode
+      : 'both';
     return {
       id: subject,
       email,
       name: typeof payload.name === 'string' ? payload.name : null,
       role,
+      siteMode,
+      emailVerified: payload.emailVerified === true,
     };
   } catch {
     return null;

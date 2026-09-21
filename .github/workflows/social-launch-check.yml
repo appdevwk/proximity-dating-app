@@ -1,0 +1,43 @@
+name: Social Launch Verification
+
+# Ensures every social-launch post is present in the site's RSS feed and
+# reports account status. Runs daily (maintenance) and on demand.
+on:
+  schedule:
+    # 06:00 UTC daily
+    - cron: '0 6 * * *'
+  workflow_dispatch:
+  pull_request:
+    branches: [ main, master ]
+
+permissions:
+  contents: read
+
+jobs:
+  verify-social:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      # Local integrity check (no build/network needed) — always run.
+      - name: Verify posts exist and are indexed
+        run: node scripts/verify-social-launch.mjs
+
+      # Strict live check only on schedule/manual — confirms the deployed
+      # /rss.xml actually contains every post.
+      - name: Verify live RSS feed contains all posts
+        if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
+        run: node scripts/verify-social-launch.mjs --strict-live
+
+      - name: Upload verification report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: social-launch-status
+          path: docs/social-launch-status.md

@@ -13,6 +13,7 @@ import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/hooks/use-toast';
 import { useSession } from '@/hooks/use-session';
 import { Save, ArrowLeft, UserRound, Upload } from 'lucide-react';
+import { AdBanner } from '@/components/ad-manager';
 import type { GenderValue, UserMe } from '@/lib/types';
 
 const GENDERS: GenderValue[] = ['MALE', 'FEMALE', 'NON_BINARY', 'OTHER'];
@@ -167,7 +168,7 @@ export default function ProfileEditPage() {
 
   if (status === 'loading' || loading) {
     return (
-      <div className="min-h-screen bg-black text-white">
+      <div className="min-h-screen" style={{ background: 'linear-gradient(90deg, rgba(85,0,137,1) 0%, rgba(120,0,123,1) 75%, rgba(85,0,137,1) 100%)' }}>
         <Navigation currentPath="/profile" />
         <div className="flex items-center justify-center min-h-[60vh]">
           <div className="text-pink-500 animate-pulse">Loading…</div>
@@ -177,7 +178,7 @@ export default function ProfileEditPage() {
   }
 
   return (
-    <div className="min-h-screen bg-black text-white">
+    <div className="min-h-screen" style={{ background: 'linear-gradient(90deg, rgba(85,0,137,1) 0%, rgba(120,0,123,1) 75%, rgba(85,0,137,1) 100%)' }}>
       <Navigation currentPath="/profile" />
 
       <div className="max-w-2xl mx-auto px-4 py-6 md:py-8 space-y-6">
@@ -385,6 +386,10 @@ export default function ProfileEditPage() {
             {saving ? 'Saving…' : 'Save Profile'}
           </Button>
         </div>
+        <div className="text-center py-6">
+          <AdBanner slot="1234567892" />
+        </div>
+        <AdBanner slot="1234567894" />
       </div>
     </div>
   );

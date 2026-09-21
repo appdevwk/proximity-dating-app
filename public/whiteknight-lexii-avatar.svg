@@ -1,0 +1,26 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 512 512">
+  <!-- WhiteKnight Studios -- Proximity engineer avatar (lexii). Black channel
+       plate + magenta->red gradient ring emblem (matches the launch logo's
+       "plate then lock absolute red"), plus a subtle knight-visor slit so the
+       avatar reads as the studio's engineer, not the dating P. -->
+  <defs>
+    <linearGradient id="rk" x1="0" y1="0" x2="0.7" y2="1">
+      <stop offset="0" stop-color="#ff8ac2"/>
+      <stop offset="0.55" stop-color="#ff2ea6"/>
+      <stop offset="0.8" stop-color="#7a2dff"/>
+      <stop offset="1" stop-color="#f43b3b"/>
+    </linearGradient>
+    <radialGradient id="bg" cx="50%" cy="38%" r="76%">
+      <stop offset="0" stop-color="#14102a"/>
+      <stop offset="1" stop-color="#05030a"/>
+    </radialGradient>
+  </defs>
+  <rect width="512" height="512" fill="url(#bg)"/>
+  <circle cx="256" cy="256" r="188" fill="#0b0714" stroke="url(#rk)" stroke-width="20"/>
+  <g fill="url(#rk)" stroke="none">
+    <path d="M 192 122 L 256 188 L 320 122 L 356 158 L 320 194 L 318 206 L 318 322 L 256 384 L 194 322 L 194 206 L 192 194 L 156 158 Z"/>
+    <circle cx="256" cy="348" r="26" fill="#ffffff" opacity="0.92"/>
+    <circle cx="232" cy="340" r="8" fill="#0b0714"/>
+    <circle cx="280" cy="340" r="8" fill="#0b0714"/>
+  </g>
+</svg>

@@ -4,47 +4,45 @@ import { mkdir, writeFile } from 'fs/promises';
 import path from 'path';
 import { db } from '@/lib/db';
 import { getSessionUser } from '@/lib/auth';
-import {
-  extractIdEvidence,
-  normalizeDocumentImage,
-  maskDateOfBirth,
-  type IdDocumentType,
-} from '@/lib/services/id-verify';
-import {
-  analyzeFaceInDocument,
-  deserializeFingerprint,
-  fingerprintDistance,
-  ID_FACE_MATCH_THRESHOLD,
-} from '@/lib/services/face-fingerprint';
+import { Prisma } from '@prisma/client';
+import type { VerificationType } from '@prisma/client';
 
 export const runtime = 'nodejs';
+export const dynamic = 'force-dynamic';
 
-const MAX_SIZE_BYTES = 5 * 1024 * 1024; // 5 MB
-const ALLOWED_TYPES = new Map<string, string>([
-  ['image/jpeg', 'jpg'],
-  ['image/png', 'png'],
-  ['image/webp', 'webp'],
-]);
-const DOCUMENT_TYPES: IdDocumentType[] = ['DRIVERS_LICENSE', 'PASSPORT', 'ID_CARD'];
+let idFns: any = null;
+let faceFns: any = null;
+
+async function getIdFns() {
+  if (!idFns) {
+    const mod = await import('@/lib/services/id-verify');
+    idFns = mod;
+  }
+  return idFns;
+}
+
+async function getFaceFns() {
+  if (!faceFns) {
+    const mod = await import('@/lib/services/face-fingerprint');
+    faceFns = mod;
+  }
+  return faceFns;
+}
 
 function sha256(buffer: Buffer): string {
   return createHash('sha256').update(buffer).digest('hex');
 }
 
+const MAX_SIZE_BYTES = 5 * 1024 * 1024;
+const ALLOWED_TYPES = new Map<string, string>([
+  ['image/jpeg', 'jpg'],
+  ['image/png', 'png'],
+  ['image/webp', 'webp'],
+]);
+const DOCUMENT_TYPES = ['DRIVERS_LICENSE', 'PASSPORT', 'ID_CARD'];
+
 /**
  * Government-ID verification (evidence-based age + identity).
- *
- * Upload a photo of a government-issued ID (driver's license, passport, or
- * national ID card). The platform:
- *   1. OCRs the document (MRZ preferred) to read an actual date of birth and
- *      confirms the holder is 18+ from that date;
- *   2. fingerprints the portrait on the document and matches it against the
- *      member's verification selfie (the ID must belong to the same person);
- *   3. records the document hash so the same document cannot be used on two
- *      accounts.
- *
- * The document image is stored privately on the server (outside public/), is
- * never served through any URL, and is only used to produce this evidence.
  */
 export async function POST(request: NextRequest) {
   try {
@@ -84,9 +82,9 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'No file provided' }, { status: 400 });
     }
     const documentType = typeof rawType === 'string' ? rawType : '';
-    if (!DOCUMENT_TYPES.includes(documentType as IdDocumentType)) {
+    if (!DOCUMENT_TYPES.includes(documentType)) {
       return NextResponse.json(
-        { error: 'Choose a document type: driver’s license, passport, or national ID.' },
+        { error: 'Choose a document type: driver\'s license, passport, or national ID.' },
         { status: 400 }
       );
     }
@@ -107,10 +105,12 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const normalized = await normalizeDocumentImage(fileBuffer);
+    const face = await getFaceFns();
+    const id = await getIdFns();
+
+    const normalized = await id.normalizeDocumentImage(fileBuffer);
     const documentHash = sha256(normalized);
 
-    // A government-issued ID is unique: block reuse across accounts.
     if (user.idDocumentHash !== documentHash) {
       const other = await db.user.findFirst({
         where: { idDocumentHash: documentHash, id: { not: session.id } },
@@ -127,8 +127,7 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    // Evidence-based age: read an actual date of birth from the document.
-    const evidence = await extractIdEvidence(normalized, documentType as IdDocumentType);
+    const evidence = await id.extractIdEvidence(normalized, documentType);
     if (!evidence.ok) {
       if (evidence.code === 'underage' || evidence.code === 'impossibleDate') {
         await db.verification.upsert({
@@ -136,7 +135,7 @@ export async function POST(request: NextRequest) {
           update: { status: 'REJECTED', verifiedAt: null },
           create: {
             userId: session.id,
-            documentType: documentType as IdDocumentType,
+            documentType: documentType as VerificationType,
             documentUrl: null,
             idSource: null,
             status: 'REJECTED',
@@ -149,8 +148,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // The ID portrait must be the same person as the verification selfie.
-    const idFace = await analyzeFaceInDocument(normalized);
+    const idFace = await face.analyzeFaceInDocument(normalized);
     if (!idFace.ok) {
       return NextResponse.json(
         {
@@ -161,24 +159,23 @@ export async function POST(request: NextRequest) {
         { status: 400 }
       );
     }
-    const selfie = deserializeFingerprint(user.faceFingerprint);
+    const selfie = face.deserializeFingerprint(user.faceFingerprint);
     const idFaceMatchScore = selfie
-      ? fingerprintDistance(idFace.descriptor, selfie)
+      ? face.fingerprintDistance(idFace.descriptor, selfie)
       : 1;
-    if (selfie && idFaceMatchScore > ID_FACE_MATCH_THRESHOLD) {
+    if (selfie && idFaceMatchScore > face.ID_FACE_MATCH_THRESHOLD) {
       return NextResponse.json(
         {
           error:
             'The portrait on this document does not match your verification photo. The ID must belong to you.',
           code: 'idFaceMismatch',
           matchScore: Number(idFaceMatchScore.toFixed(3)),
-          threshold: ID_FACE_MATCH_THRESHOLD,
+          threshold: face.ID_FACE_MATCH_THRESHOLD,
         },
         { status: 400 }
       );
     }
 
-    // Persist privately (outside public/) and record the evidence.
     const storageDir = path.join(process.cwd(), 'data', 'verification-ids', session.id);
     await mkdir(storageDir, { recursive: true });
     const filename = `${documentType}-${Date.now()}-${randomUUID()}.${extension}`;
@@ -201,8 +198,8 @@ export async function POST(request: NextRequest) {
       db.verification.upsert({
         where: { userId: session.id },
         update: {
-          documentType: documentType as IdDocumentType,
-          documentUrl: storageRef, // private; never served through a public URL
+          documentType: documentType as VerificationType,
+          documentUrl: storageRef,
           idSource: evidence.source,
           idDocumentHash: documentHash,
           dob: evidence.dob,
@@ -213,7 +210,7 @@ export async function POST(request: NextRequest) {
         },
         create: {
           userId: session.id,
-          documentType: documentType as IdDocumentType,
+          documentType: documentType as VerificationType,
           documentUrl: storageRef,
           idSource: evidence.source,
           idDocumentHash: documentHash,
@@ -229,7 +226,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({
       idVerified: true,
       age: evidence.age,
-      dobMasked: maskDateOfBirth(evidence.dob),
+      dobMasked: id.maskDateOfBirth(evidence.dob),
       source: evidence.source,
       country: evidence.country,
       idFaceMatchScore: Number(idFaceMatchScore.toFixed(3)),
@@ -250,6 +247,7 @@ export async function GET() {
     if (!session) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
+    const id = await getIdFns();
     const user = await db.user.findUnique({
       where: { id: session.id },
       select: {
@@ -269,7 +267,7 @@ export async function GET() {
       documentType: user.verification?.documentType ?? null,
       source: user.verification?.idSource ?? null,
       country: user.verification?.documentCountry ?? null,
-      dobMasked: user.verification?.dob ? maskDateOfBirth(user.verification.dob) : null,
+      dobMasked: user.verification?.dob ? id.maskDateOfBirth(user.verification.dob) : null,
       idFaceMatchScore: user.idFaceMatchScore
         ? Number(user.idFaceMatchScore.toFixed(3))
         : null,

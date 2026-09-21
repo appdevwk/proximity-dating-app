@@ -1,18 +1,17 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { 
-  Smartphone, 
-  Download, 
-  Apple, 
-  Smartphone as Android, 
-  CheckCircle, 
-  AlertCircle, 
+import {
+  Smartphone,
+  Download,
+  Apple,
+  CheckCircle,
+  AlertCircle,
   QrCode,
   Share2,
   Settings,
@@ -22,9 +21,10 @@ import {
   Users,
   Heart,
   MessageCircle,
-  MapPin
+  MapPin,
 } from 'lucide-react';
-import { SaucyBackground } from '@/components/saucy-background';
+import { Navigation } from '@/components/navigation';
+import { AdBanner } from '@/components/ad-manager';
 
 interface MobileDeployment {
   platform: 'android' | 'ios';
@@ -140,15 +140,16 @@ export default function MobilePage() {
   };
 
   return (
-    <SaucyBackground>
+    <div className="min-h-screen" style={{ background: 'linear-gradient(90deg, rgba(85,0,137,1) 0%, rgba(120,0,123,1) 75%, rgba(85,0,137,1) 100%)' }}>
+      <Navigation currentPath="/mobile" />
       <div className="relative z-10 container mx-auto px-4 py-8">
         <div className="max-w-4xl mx-auto">
           {/* Header */}
           <div className="text-center mb-12">
-            <h1 className="text-4xl md:text-6xl font-black text-pink-600 mb-4 drop-shadow-lg">
+            <h1 className="text-4xl md:text-6xl font-black text-pink-400 mb-4 drop-shadow-lg">
               PROXIMITY
             </h1>
-            <p className="text-xl text-gray-300 mb-8">
+            <p className="text-xl text-gray-200 mb-8">
               Take your dating experience mobile
             </p>
             <Badge variant="secondary" className="text-lg px-4 py-2">
@@ -165,7 +166,7 @@ export default function MobilePage() {
                 onClick={() => setSelectedPlatform('android')}
                 className="flex items-center gap-2"
               >
-                <Android className="w-5 h-5" />
+                <Smartphone className="w-5 h-5" />
                 Android
               </Button>
               <Button
@@ -187,7 +188,7 @@ export default function MobilePage() {
                 <div className="flex items-center justify-between">
                   <CardTitle className="flex items-center gap-2">
                     {selectedPlatform === 'android' ? (
-                      <Android className="w-6 h-6 text-green-500" />
+                      <Smartphone className="w-6 h-6 text-green-500" />
                     ) : (
                       <Apple className="w-6 h-6 text-gray-300" />
                     )}
@@ -401,7 +402,7 @@ export default function MobilePage() {
             <h2 className="text-3xl font-bold text-white mb-4">
               Ready to Find Your Match?
             </h2>
-            <p className="text-gray-300 mb-8">
+            <p className="text-gray-200 mb-8">
               Join thousands of users already enjoying the Proximity Dating App on their mobile devices.
             </p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
@@ -416,7 +417,11 @@ export default function MobilePage() {
             </div>
           </div>
         </div>
+        <div className="text-center py-6">
+          <AdBanner slot="1234567892" />
+        </div>
+        <AdBanner slot="1234567894" />
       </div>
-    </SaucyBackground>
+    </div>
   );
 }
