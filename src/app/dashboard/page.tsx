@@ -10,7 +10,7 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { AdBanner, AdInterstitial } from '@/components/ad-manager';
 import { useSession } from '@/hooks/use-session';
 import type { Conversation, MatchSummary, UserMe } from '@/lib/types';
-import { Heart, MessageCircle, MessagesSquare, ShieldCheck, Sparkles, UserRound, Settings, MapPin, ArrowRight } from 'lucide-react';
+import { Heart, MessageCircle, MessagesSquare, ShieldCheck, Sparkles, UserRound, Settings, MapPin, ArrowRight, Wand2 } from 'lucide-react';
 
 export default function DashboardPage() {
   const router = useRouter();
@@ -133,6 +133,41 @@ export default function DashboardPage() {
             />
           </div>
         )}
+
+        {/* AI Girls quick link */}
+        <Card className="bg-gradient-to-br from-purple-900/70 via-fuchsia-900/50 to-pink-900/40 border-pink-950 overflow-hidden relative">
+          <div className="absolute -right-6 -top-6 h-28 w-28 rounded-full bg-pink-600/20 blur-2xl" />
+          <CardHeader className="flex flex-row items-center justify-between flex-wrap gap-3 space-y-0">
+            <div>
+              <CardTitle className="text-pink-300 flex items-center gap-2">
+                <Wand2 className="w-4 h-4" />
+                Proximity AI Girls
+              </CardTitle>
+              <CardDescription className="text-gray-400 mt-1">
+                Chat with AI companions, generate images, or create your own girlfriend. Mainstream and 18+ versions available.
+              </CardDescription>
+            </div>
+          </CardHeader>
+          <CardContent>
+            <div className="grid sm:grid-cols-3 gap-2">
+              {[
+                { href: '/ai-girlfriends', label: 'Browse AI Girlfriends', icon: Heart },
+                { href: '/ai-girlfriends/generate', label: 'Image Generator', icon: Wand2 },
+                { href: '/ai-girlfriends/characters/new', label: 'Create Your Own', icon: Sparkles },
+              ].map((link) => (
+                <button
+                  key={link.href}
+                  onClick={() => router.push(link.href)}
+                  className="flex items-center justify-center gap-2 rounded-xl bg-black/30 hover:bg-pink-950/40 transition-colors px-4 py-3 text-sm font-bold text-pink-200"
+                >
+                  <link.icon className="w-4 h-4 text-pink-400" />
+                  {link.label}
+                  <ArrowRight className="w-3.5 h-3.5 text-pink-400" />
+                </button>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
 
         <div className="grid lg:grid-cols-3 gap-6">
           {/* Profile preview */}

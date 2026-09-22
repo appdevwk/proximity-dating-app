@@ -13,6 +13,8 @@ import {
   User,
   LogOut,
   ShieldCheck,
+  Sparkles,
+  Clapperboard,
 } from 'lucide-react';
 import { useSession } from '@/hooks/use-session';
 import { SiteModeToggle } from '@/components/site-mode-toggle';
@@ -30,6 +32,8 @@ export function Navigation({ currentPath }: NavigationProps) {
     { href: '/verify', label: 'Verify', icon: ShieldCheck },
     { href: '/profile', label: 'Discover', icon: Heart },
     { href: '/messages', label: 'Messages', icon: MessageCircle },
+    { href: '/ai-girlfriends', label: 'AI Girls', icon: Sparkles },
+    { href: '/proxcams', label: 'ProxCams', icon: Clapperboard },
     { href: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
     { href: '/subscribe', label: 'Subscribe', icon: Heart, highlight: true },
     ...(isAdmin ? [{ href: '/portal/39867b93', label: 'Admin', icon: Settings }] : []),

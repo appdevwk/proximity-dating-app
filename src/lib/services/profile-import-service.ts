@@ -97,7 +97,10 @@ class ProfileImportService {
       const externalProfiles = await this.fetchPublicProfiles(source, limit);
       
       if (!externalProfiles.success || !externalProfiles.data) {
-        return externalProfiles;
+        return {
+          success: false,
+          error: externalProfiles.error,
+        };
       }
 
       const importedProfiles: Profile[] = [];

@@ -22,7 +22,7 @@ export interface AppVersion {
   platform: 'IOS' | 'android';
   releaseDate: Date;
   isRequired: boolean;
-  changelog: string[];
+  changelog: string; // JSON string
   downloadUrl: string;
   size: string;
 }
@@ -246,7 +246,7 @@ export class DeviceManagementService {
   async getAppVersions(platform?: 'ios' | 'android'): Promise<AppVersion[]> {
     try {
       const versions = await prisma.appVersion.findMany({
-        where: platform ? { platform } : {},
+        where: platform ? { platform: platform.toUpperCase() as any } : {},
         orderBy: { releaseDate: 'desc' },
       });
       return versions.map(version => this.mapToAppVersion(version));
@@ -261,6 +261,7 @@ export class DeviceManagementService {
       const version = await prisma.appVersion.create({
         data: {
           ...versionData,
+          platform: versionData.platform.toUpperCase() as any,
           releaseDate: new Date(),
         },
       });
@@ -286,21 +287,21 @@ export class DeviceManagementService {
         throw new Error('Device not found');
       }
 
-      const latestVersion = await this.getLatestAppVersion(device.platform);
+      const latestVersion = await this.getLatestAppVersion(device.platform === 'IOS' ? 'IOS' : 'android');
 
       if (!latestVersion) {
         return {
           hasUpdate: false,
-          currentVersion: device.appVersion,
+          currentVersion: device.appVersion ?? 'unknown',
           isRequired: false,
         };
       }
 
-      const hasUpdate = this.compareVersions(device.appVersion, latestVersion.version) < 0;
+      const hasUpdate = this.compareVersions(device.appVersion ?? '0.0.0', latestVersion.version) < 0;
 
       return {
         hasUpdate,
-        currentVersion: device.appVersion,
+        currentVersion: device.appVersion ?? 'unknown',
         latestVersion: hasUpdate ? latestVersion : undefined,
         isRequired: latestVersion.isRequired,
       };
