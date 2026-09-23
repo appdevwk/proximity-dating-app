@@ -31,6 +31,7 @@ export default function ProfilePage() {
   const [offset, setOffset] = useState(0);
   const [loading, setLoading] = useState(true);
   const [hasMore, setHasMore] = useState(true);
+  const [sortByDistance, setSortByDistance] = useState(false);
   const [matchedProfile, setMatchedProfile] = useState<DiscoverProfile | null>(null);
   const [busy, setBusy] = useState(false);
   const [swipeError, setSwipeError] = useState<string | null>(null);
@@ -46,10 +47,11 @@ export default function ProfilePage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [status]);
 
-  const loadProfiles = useCallback(async (atOffset: number) => {
+  const loadProfiles = useCallback(async (atOffset: number, forceDistanceSort?: boolean) => {
     try {
       setLoading(true);
-      const response = await fetch(`/api/profiles/discover?limit=20&offset=${atOffset}`, {
+      const sortParam = (forceDistanceSort ?? sortByDistance) ? '&sort=distance' : '';
+      const response = await fetch(`/api/profiles/discover?limit=20&offset=${atOffset}${sortParam}`, {
         cache: 'no-store',
       });
       if (response.status === 401) {
@@ -74,7 +76,16 @@ export default function ProfilePage() {
     } finally {
       setLoading(false);
     }
-  }, [router]);
+  }, [router, sortByDistance]);
+
+  const toggleSort = () => {
+    const next = !sortByDistance;
+    setSortByDistance(next);
+    setDeck([]);
+    setOffset(0);
+    setHasMore(true);
+    void loadProfiles(0, next);
+  };
 
   const topCard = useMemo(() => deck[0] ?? null, [deck]);
 
@@ -136,6 +147,30 @@ export default function ProfilePage() {
             {swipeError}
           </div>
         )}
+
+        <div className="mb-4 flex items-center justify-between">
+          <button
+            onClick={toggleSort}
+            aria-pressed={sortByDistance}
+            className={`flex items-center gap-2 rounded-full px-4 py-1.5 text-xs font-semibold border transition-colors ${
+              sortByDistance
+                ? 'bg-pink-600/20 border-pink-500/60 text-pink-300'
+                : 'bg-white/5 border-pink-900/40 text-gray-400 hover:text-pink-300'
+            }`}
+          >
+            {sortByDistance ? (
+              <>
+                <MapPin className="w-3.5 h-3.5" />
+                Nearby first
+              </>
+            ) : (
+              <>
+                <RefreshCw className="w-3.5 h-3.5" />
+                Random order
+              </>
+            )}
+          </button>
+        </div>
 
         <div className="relative h-[68vh] md:h-[70vh]">
           {loading && deck.length === 0 ? (

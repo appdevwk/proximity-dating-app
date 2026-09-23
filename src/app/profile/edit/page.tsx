@@ -12,7 +12,7 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/hooks/use-toast';
 import { useSession } from '@/hooks/use-session';
-import { Save, ArrowLeft, UserRound, Upload, MapPin } from 'lucide-react';
+import { Save, ArrowLeft, UserRound, Upload, MapPin, Navigation as NavigationIcon } from 'lucide-react';
 import { AdBanner } from '@/components/ad-manager';
 import type { GenderValue, UserMe } from '@/lib/types';
 
@@ -34,6 +34,7 @@ export default function ProfileEditPage() {
   const [interestedIn, setInterestedIn] = useState<GenderValue[]>([]);
   const [location, setLocation] = useState('');
   const [locating, setLocating] = useState(false);
+  const [approximating, setApproximating] = useState(false);
   const [showDistance, setShowDistance] = useState(true);
   const [profilePicture, setProfilePicture] = useState('');
   const [uploading, setUploading] = useState(false);
@@ -112,6 +113,43 @@ export default function ProfileEditPage() {
     }
   };
 
+  const persistLocation = async (body: Record<string, unknown>) => {
+    const response = await fetch('/api/user/location', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body),
+    });
+    if (response.status === 401) {
+      router.replace('/');
+      return;
+    }
+    const data = (await response.json().catch(() => null)) as {
+      location?: string | null;
+      error?: string;
+    } | null;
+    if (response.ok) {
+      if (data?.location) setLocation(data.location);
+      toast({ title: 'Location saved', description: "You'll now see nearby singles and distances." });
+    } else {
+      toast({
+        title: 'Could not save location',
+        description: data?.error ?? 'Please try again.',
+        variant: 'destructive',
+      });
+    }
+  };
+
+  const saveApproximateLocation = async () => {
+    setApproximating(true);
+    try {
+      await persistLocation({ useIpApproximate: true });
+    } catch {
+      toast({ title: 'Network error', description: 'Please try again.', variant: 'destructive' });
+    } finally {
+      setApproximating(false);
+    }
+  };
+
   const saveMyLocation = async () => {
     if (typeof navigator === 'undefined' || !navigator.geolocation) {
       toast({
@@ -126,29 +164,7 @@ export default function ProfileEditPage() {
       async (position) => {
         const { latitude, longitude } = position.coords;
         try {
-          const response = await fetch('/api/user/location', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ latitude, longitude }),
-          });
-          if (response.status === 401) {
-            router.replace('/');
-            return;
-          }
-          const data = (await response.json().catch(() => null)) as {
-            location?: string | null;
-            error?: string;
-          } | null;
-          if (response.ok) {
-            if (data?.location) setLocation(data.location);
-            toast({ title: 'Location saved', description: "You'll now see nearby singles and distances." });
-          } else {
-            toast({
-              title: 'Could not save location',
-              description: data?.error ?? 'Please try again.',
-              variant: 'destructive',
-            });
-          }
+          await persistLocation({ latitude, longitude });
         } catch {
           toast({ title: 'Network error', description: 'Please try again.', variant: 'destructive' });
         } finally {
@@ -346,6 +362,16 @@ export default function ProfileEditPage() {
               >
                 <MapPin className="w-4 h-4 mr-2" />
                 {locating ? 'Locating…' : 'Use my current location'}
+              </Button>
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => void saveApproximateLocation()}
+                disabled={approximating}
+                className="w-full border-pink-800 text-pink-300 hover:bg-pink-950/40"
+              >
+                <NavigationIcon className="w-4 h-4 mr-2" />
+                {approximating ? 'Approximating…' : 'Use approximate location instead'}
               </Button>
               <p className="text-xs text-gray-500">
                 Your coordinates are stored privately. Only your city and distance are shown to other members.

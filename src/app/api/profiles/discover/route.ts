@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db';
 import { getSessionUser } from '@/lib/auth';
-import { ageFromDateOfBirth, haversineMiles } from '@/lib/geo';
+import { ageFromDateOfBirth, haversineMiles, ipLatLng, clientIp, type IpLocation } from '@/lib/geo';
 import { requiresVerification, verificationRequiredResponse } from '@/lib/verification';
 import type { DiscoverProfile } from '@/lib/types';
 
@@ -19,6 +19,7 @@ export async function GET(request: NextRequest) {
     const offsetRaw = Number(searchParams.get('offset') ?? '0');
     const limit = Number.isFinite(limitRaw) ? Math.min(Math.max(limitRaw, 1), 50) : 20;
     const offset = Number.isFinite(offsetRaw) ? Math.max(offsetRaw, 0) : 0;
+    const sortByDistance = searchParams.get('sort') === 'distance';
 
     const me = await db.user.findUnique({
       where: { id: session.id },
@@ -48,6 +49,20 @@ export async function GET(request: NextRequest) {
     const prefMinAge = prefs?.minAge ?? 18;
     const prefMaxAge = prefs?.maxAge ?? 100;
     const prefMaxDistance = prefs?.maxDistance ?? 50;
+
+    // Distance anchor: stored profile coordinates when set, otherwise an
+    // approximate IP-derived fallback so distance still works pre-setup.
+    let anchor: IpLocation | null =
+      me.profile.latitude != null && me.profile.longitude != null
+        ? { latitude: me.profile.latitude, longitude: me.profile.longitude }
+        : null;
+    if (!anchor) {
+      anchor = await ipLatLng(clientIp(request));
+    }
+    const distanceTo = (profile: { latitude: number | null; longitude: number | null }): number | null => {
+      if (anchor == null || profile.latitude == null || profile.longitude == null) return null;
+      return haversineMiles(anchor.latitude, anchor.longitude, profile.latitude, profile.longitude);
+    };
 
     // Users this user has already swiped on.
     const swipedMatches = await db.match.findMany({
@@ -95,42 +110,35 @@ export async function GET(request: NextRequest) {
       if (!prefsInterested.includes(profile.gender)) return false;
       if (!candidateInterested.includes(myGender)) return false;
 
-      if (profile.latitude != null && profile.longitude != null && me.profile?.latitude != null && me.profile?.longitude != null) {
-        const distance = haversineMiles(
-          me.profile.latitude,
-          me.profile.longitude,
-          profile.latitude,
-          profile.longitude
-        );
-        if (distance > prefMaxDistance) return false;
-      }
+      const candidateDistance = distanceTo(profile);
+      if (candidateDistance != null && candidateDistance > prefMaxDistance) return false;
 
       return true;
     });
 
-    // Random shuffle so every request surfaces different people.
-    for (let i = filtered.length - 1; i > 0; i--) {
-      const j = Math.floor(Math.random() * (i + 1));
-      [filtered[i], filtered[j]] = [filtered[j], filtered[i]];
+    if (sortByDistance) {
+      filtered.sort((a, b) => {
+        const da = distanceTo(a);
+        const db = distanceTo(b);
+        if (da == null && db == null) return 0;
+        if (da == null) return 1;
+        if (db == null) return -1;
+        return da - db;
+      });
+    } else {
+      // Random shuffle so every request surfaces different people.
+      for (let i = filtered.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [filtered[i], filtered[j]] = [filtered[j], filtered[i]];
+      }
     }
 
     const slice = filtered.slice(offset, offset + limit);
 
     const profiles: DiscoverProfile[] = slice.map((profile) => {
       let distanceMiles: number | null = null;
-      if (
-        profile.showDistance !== false &&
-        profile.latitude != null &&
-        profile.longitude != null &&
-        me.profile?.latitude != null &&
-        me.profile?.longitude != null
-      ) {
-        distanceMiles = haversineMiles(
-          me.profile.latitude,
-          me.profile.longitude,
-          profile.latitude,
-          profile.longitude
-        );
+      if (profile.showDistance !== false) {
+        distanceMiles = distanceTo(profile);
       }
 
       return {
