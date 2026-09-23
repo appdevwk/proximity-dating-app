@@ -22,6 +22,16 @@ import {
 import { useSession } from '@/hooks/use-session';
 import type { DiscoverProfile } from '@/lib/types';
 
+interface Liker {
+  userId: string;
+  displayName: string;
+  profilePicture: string | null;
+  age: number | null;
+  userVerified: boolean;
+  superLike: boolean;
+  likedAt: string;
+}
+
 const SWIPE_THRESHOLD = 80;
 
 export default function ProfilePage() {
@@ -35,6 +45,7 @@ export default function ProfilePage() {
   const [matchedProfile, setMatchedProfile] = useState<DiscoverProfile | null>(null);
   const [busy, setBusy] = useState(false);
   const [swipeError, setSwipeError] = useState<string | null>(null);
+  const [likesInfo, setLikesInfo] = useState<{ premium: boolean; count: number; likes: Liker[] } | null>(null);
   const lastRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -45,6 +56,20 @@ export default function ProfilePage() {
     }
     void loadProfiles(0);
     // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [status]);
+
+  useEffect(() => {
+    if (status !== 'authenticated') return;
+    void (async () => {
+      try {
+        const response = await fetch('/api/likes', { cache: 'no-store' });
+        if (!response.ok) return;
+        const data = (await response.json()) as { premium: boolean; count: number; likes?: Liker[] };
+        setLikesInfo({ premium: data.premium, count: data.count, likes: data.likes ?? [] });
+      } catch {
+        // Non-fatal — the deck works without the likes teaser.
+      }
+    })();
   }, [status]);
 
   const loadProfiles = useCallback(async (atOffset: number, forceDistanceSort?: boolean) => {
@@ -146,6 +171,71 @@ export default function ProfilePage() {
           <div className="mb-4 rounded-lg bg-red-500/10 border border-red-500/30 text-red-300 text-sm px-4 py-3">
             {swipeError}
           </div>
+        )}
+
+        {likesInfo && likesInfo.count > 0 && (
+          likesInfo.premium ? (
+            <div className="mb-5 rounded-2xl border border-pink-500/40 bg-gradient-to-br from-pink-600/20 to-purple-700/20 p-4">
+              <div className="flex items-center justify-between mb-3">
+                <h2 className="text-lg font-bold text-white">People who liked you</h2>
+                <span className="text-xs text-pink-300 bg-pink-600/20 border border-pink-500/40 rounded-full px-2.5 py-1">
+                  {likesInfo.count} {likesInfo.count === 1 ? 'like' : 'likes'}
+                </span>
+              </div>
+              <div className="grid grid-cols-3 sm:grid-cols-4 gap-3">
+                {likesInfo.likes.map((liker) => (
+                  <div
+                    key={liker.userId}
+                    className="rounded-xl overflow-hidden border border-pink-800/40 bg-black/40"
+                  >
+                    <div className="aspect-square w-full">
+                      {liker.profilePicture ? (
+                        <img src={liker.profilePicture} alt={liker.displayName} className="w-full h-full object-cover" />
+                      ) : (
+                        <div className="w-full h-full bg-gradient-to-br from-pink-700/50 to-purple-800/50 flex items-center justify-center text-3xl text-pink-300">
+                          {liker.displayName.charAt(0).toUpperCase()}
+                        </div>
+                      )}
+                    </div>
+                    <div className="p-2">
+                      <p className="text-sm font-semibold text-white truncate">
+                        {liker.displayName}
+                        {liker.age != null && <span className="text-gray-400 font-normal">, {liker.age}</span>}
+                      </p>
+                      <div className="flex items-center gap-1 mt-0.5">
+                        {liker.superLike && (
+                          <span className="flex items-center gap-0.5 text-[10px] text-purple-300">
+                            <Star className="w-3 h-3" /> Super like
+                          </span>
+                        )}
+                        {liker.userVerified && (
+                          <span className="flex items-center gap-0.5 text-[10px] text-emerald-400">
+                            <ShieldCheck className="w-3 h-3" /> Verified
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          ) : (
+            <div className="mb-5 rounded-2xl border border-pink-500/40 bg-gradient-to-r from-pink-600/25 to-purple-700/25 p-4 flex items-center justify-between gap-3">
+              <div>
+                <h2 className="text-lg font-bold text-white flex items-center gap-2">
+                  <Heart className="w-5 h-5 text-pink-400" />
+                  {likesInfo.count} {likesInfo.count === 1 ? 'person likes' : 'people like'} you
+                </h2>
+                <p className="text-sm text-gray-300 mt-0.5">Upgrade to see who&apos;s interested.</p>
+              </div>
+              <Button
+                onClick={() => router.push('/subscribe')}
+                className="bg-gradient-to-r from-pink-600 to-purple-600 hover:from-pink-700 hover:to-purple-700 shrink-0"
+              >
+                See Who Likes You
+              </Button>
+            </div>
+          )
         )}
 
         <div className="mb-4 flex items-center justify-between">

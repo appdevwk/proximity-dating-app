@@ -14,13 +14,22 @@ const BASE_URL =
 
 export async function POST(request: NextRequest) {
   try {
+    // Resolve the base URL from the actual request origin so checkout
+    // redirects/return URLs always point at the domain the user is on
+    // (the parked NEXT_PUBLIC_APP_URL domain is not routed to Vercel yet).
+    const origin = new URL(request.url).origin;
+    const baseUrl =
+      origin && !origin.includes('localhost')
+        ? origin
+        : BASE_URL;
+
     const session = await getSessionUser();
     if (!session) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
     const body = await request.json().catch(() => ({}));
-    const { planId } = body as { planId?: string };
+    const { planId, mode } = body as { planId?: string; mode?: string };
 
     if (!planId) {
       return NextResponse.json({ error: 'Plan ID is required' }, { status: 400 });
@@ -66,12 +75,21 @@ export async function POST(request: NextRequest) {
       customerId = customer.id;
     }
 
+    const embedded = mode === 'embedded';
+
     const checkout = await stripe.checkout.sessions.create({
       customer: customerId,
       mode: 'subscription',
       line_items: [{ price: priceId, quantity: 1 }],
-      success_url: `${BASE_URL}/subscribe?checkout=success&session_id={CHECKOUT_SESSION_ID}`,
-      cancel_url: `${BASE_URL}/subscribe?checkout=cancelled`,
+      ...(embedded
+        ? {
+            ui_mode: 'embedded',
+            return_url: `${baseUrl}/subscribe?checkout=success&session_id={CHECKOUT_SESSION_ID}`,
+          }
+        : {
+            success_url: `${baseUrl}/subscribe?checkout=success&session_id={CHECKOUT_SESSION_ID}`,
+            cancel_url: `${baseUrl}/subscribe?checkout=cancelled`,
+          }),
       client_reference_id: session.id,
       metadata: { userId: session.id, planId: plan.id },
       subscription_data: {
@@ -79,6 +97,9 @@ export async function POST(request: NextRequest) {
       },
     });
 
+    if (embedded) {
+      return NextResponse.json({ clientSecret: checkout.client_secret ?? null });
+    }
     return NextResponse.json({ url: checkout.url });
   } catch (error) {
     console.error('Checkout error:', error);

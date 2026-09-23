@@ -2,12 +2,18 @@
 
 import { useCallback, useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { loadStripe } from '@stripe/stripe-js';
+import { EmbeddedCheckout, EmbeddedCheckoutProvider } from '@stripe/react-stripe-js';
 import { Navigation } from '@/components/navigation';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { useSession } from '@/hooks/use-session';
 import { Check, Loader2, Globe, ShieldCheck, X } from 'lucide-react';
+
+const stripePromise = process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY
+  ? loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY)
+  : null;
 
 interface Plan {
   id: string;
@@ -46,6 +52,7 @@ export default function SubscribePage() {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [message, setMessage] = useState<string | null>(null);
+  const [checkoutSecret, setCheckoutSecret] = useState<string | null>(null);
 
   const load = useCallback(async () => {
     try {
@@ -86,6 +93,33 @@ export default function SubscribePage() {
     void load();
   }, [status, router, load]);
 
+  // After an embedded-checkout return (?checkout=success), the Stripe
+  // webhook activation can lag a few seconds — poll status until the
+  // subscription row shows up, then surface it without a manual refresh.
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    if (new URLSearchParams(window.location.search).get('checkout') !== 'success') return;
+    let attempts = 0;
+    const timer = window.setInterval(async () => {
+      attempts += 1;
+      try {
+        const response = await fetch('/api/crosspost/status', { cache: 'no-store' });
+        const data = await response.json();
+        if (data.subscription) {
+          window.clearInterval(timer);
+          setSubscription(data.subscription);
+          setMessage('Payment successful! Your cross-post subscription is active.');
+        } else if (attempts >= 10) {
+          window.clearInterval(timer);
+        }
+      } catch {
+        if (attempts >= 10) window.clearInterval(timer);
+      }
+    }, 3000);
+    return () => window.clearInterval(timer);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [status]);
+
   const subscribe = async (planId: string) => {
     setBusy(true);
     setError(null);
@@ -94,11 +128,19 @@ export default function SubscribePage() {
       const response = await fetch('/api/crosspost/checkout', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ planId }),
+        body: JSON.stringify({ planId, mode: 'embedded' }),
       });
       const data = await response.json();
       if (!response.ok) {
         setError(data.error ?? 'Checkout could not be started');
+        return;
+      }
+      if (data.clientSecret && stripePromise) {
+        setCheckoutSecret(data.clientSecret);
+        return;
+      }
+      if (data.clientSecret && !stripePromise) {
+        setError('Payment is temporarily unavailable. Please try again shortly.');
         return;
       }
       if (data.url) {
@@ -312,6 +354,30 @@ export default function SubscribePage() {
           )}
         </div>
       </div>
+
+      {checkoutSecret && (
+        <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm overflow-y-auto">
+          <div className="min-h-full flex items-start justify-center p-4 sm:p-8">
+            <div className="relative w-full max-w-2xl rounded-2xl bg-white p-1 shadow-2xl">
+              <button
+                type="button"
+                onClick={() => setCheckoutSecret(null)}
+                aria-label="Close checkout"
+                className="absolute -top-12 right-0 flex items-center gap-1 text-sm text-gray-300 hover:text-white"
+              >
+                <X className="w-4 h-4" />
+                Close
+              </button>
+              <EmbeddedCheckoutProvider
+                stripe={stripePromise}
+                options={{ clientSecret: checkoutSecret }}
+              >
+                <EmbeddedCheckout />
+              </EmbeddedCheckoutProvider>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

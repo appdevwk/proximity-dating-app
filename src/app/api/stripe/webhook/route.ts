@@ -53,7 +53,6 @@ export async function POST(request: NextRequest) {
       }
 
       case 'customer.subscription.updated':
-      case 'customer.subscription.updated':
       case 'customer.subscription.deleted': {
         const sub = event.data.object as Stripe.Subscription;
         const stripeSubId = sub.id;
