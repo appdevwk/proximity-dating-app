@@ -83,7 +83,7 @@ export async function POST(request: NextRequest) {
       line_items: [{ price: priceId, quantity: 1 }],
       ...(embedded
         ? {
-            ui_mode: 'embedded',
+            ui_mode: 'embedded_page',
             return_url: `${baseUrl}/subscribe?checkout=success&session_id={CHECKOUT_SESSION_ID}`,
           }
         : {
