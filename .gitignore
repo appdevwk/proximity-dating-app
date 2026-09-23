@@ -63,3 +63,11 @@ cloudflared.log
 cloudflared-custom.log
 cloudflared-*.log
 proximity-vps-update-and-launch.sh
+
+# Browser control (agent skill) artifacts
+.browser-profile/
+.browser-state.json
+shots/
+
+# Agent tooling
+.omo/
