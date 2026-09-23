@@ -5,7 +5,6 @@
   "devCommand": "next dev",
   "installCommand": "npm install",
   "env": {
-    "DATABASE_URL": "postgresql://app:30035066f6932879c624a75d946a1f3a5ded@47.194.208.113:5433/proximity_dating?sslmode=require&schema=public",
     "NEXTAUTH_SECRET": "9278deb34430ee0f93bd78d4dc8002bbc73efa12aabf7192da4946d993c0b8c0",
     "NEXT_PUBLIC_SITE_MODE": "mainstream",
     "NEXT_PUBLIC_AD_SENSE_CLIENT_ID": "ca-pub-XXXXXXXXXXXXXXXX",
