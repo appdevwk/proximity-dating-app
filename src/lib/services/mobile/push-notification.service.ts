@@ -1,8 +1,9 @@
-import admin from 'firebase-admin';
-import { ServiceAccount } from 'firebase-admin/app';
+import { initializeApp, cert } from 'firebase-admin/app';
+import type { App, ServiceAccount } from 'firebase-admin/app';
+import { getMessaging } from 'firebase-admin/messaging';
 
 // Initialize Firebase Admin (for push notifications)
-let firebaseAdmin: admin.app.App | null = null;
+let firebaseAdmin: App | null = null;
 
 const initializeFirebase = () => {
   if (!firebaseAdmin) {
@@ -13,8 +14,8 @@ const initializeFirebase = () => {
       privateKey: process.env.FIREBASE_PRIVATE_KEY?.replace(/\\n/g, '\n') || '',
     };
 
-    firebaseAdmin = admin.initializeApp({
-      credential: admin.credential.cert(serviceAccount),
+    firebaseAdmin = initializeApp({
+      credential: cert(serviceAccount),
     }, 'proximity-dating');
   }
   return firebaseAdmin;
@@ -51,6 +52,10 @@ export class PushNotificationService {
     return initializeFirebase();
   }
 
+  private getMessaging() {
+    return getMessaging(this.getFirebaseApp());
+  }
+
   async sendToUser(userId: string, payload: PushNotificationPayload): Promise<boolean> {
     try {
       const app = this.getFirebaseApp();
@@ -72,7 +77,7 @@ export class PushNotificationService {
       // Send to Android devices
       if (androidTokens.length > 0) {
         promises.push(
-          app.messaging().sendEachForMulticast({
+          this.getMessaging().sendEachForMulticast({
             tokens: androidTokens,
             notification: {
               title: payload.title,
@@ -93,7 +98,7 @@ export class PushNotificationService {
       // Send to iOS devices
       if (iosTokens.length > 0) {
         promises.push(
-          app.messaging().sendEachForMulticast({
+          this.getMessaging().sendEachForMulticast({
             tokens: iosTokens,
             notification: {
               title: payload.title,

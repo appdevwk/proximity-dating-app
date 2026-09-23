@@ -1,4 +1,5 @@
-import nodemailer from 'nodemailer';
+import { createTransport } from 'nodemailer';
+import type { Transporter } from 'nodemailer';
 
 export const EMAIL_FROM =
   process.env.SMTP_FROM ?? 'Proximity Dating <no-reply@proximitygetadate.site>';
@@ -11,9 +12,9 @@ const APP_URL =
     ? 'https://proximitygetadate.site'
     : 'http://localhost:3000');
 
-let transporter: nodemailer.Transporter | null = null;
+let transporter: Transporter | null = null;
 
-export function getMailer(): nodemailer.Transporter | null {
+export function getMailer(): Transporter | null {
   const host = process.env.SMTP_HOST;
   const user = process.env.SMTP_USER;
   const pass = process.env.SMTP_PASS;
@@ -24,7 +25,7 @@ export function getMailer(): nodemailer.Transporter | null {
   }
 
   if (!transporter) {
-    transporter = nodemailer.createTransport({
+    transporter = createTransport({
       host,
       port: Number(process.env.SMTP_PORT ?? 587),
       secure: (process.env.SMTP_SECURE ?? 'false') === 'true',
@@ -55,7 +56,7 @@ export async function sendEmail(input: {
       text: input.text ?? stripHtml(input.html),
     });
 
-    return { sent: true, delivered: info.accepted.length > 0, error: undefined };
+    return { sent: true, delivered: (info.accepted?.length ?? 0) > 0, error: undefined };
   } catch (error) {
     console.error('[email] send failed:', error);
     return { sent: false, delivered: false, error: error instanceof Error ? error.message : 'Unknown error' };
