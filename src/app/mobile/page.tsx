@@ -4,15 +4,12 @@ import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Progress } from '@/components/ui/progress';
-import { Alert, AlertDescription } from '@/components/ui/alert';
 import {
   Smartphone,
   Download,
   Apple,
   CheckCircle,
   AlertCircle,
-  QrCode,
   Share2,
   Settings,
   Shield,
@@ -38,9 +35,6 @@ interface MobileDeployment {
 
 export default function MobilePage() {
   const [selectedPlatform, setSelectedPlatform] = useState<'android' | 'ios'>('android');
-  const [downloadProgress, setDownloadProgress] = useState(0);
-  const [isDownloading, setIsDownloading] = useState(false);
-  const [installStatus, setInstallStatus] = useState<'idle' | 'downloading' | 'installing' | 'installed'>('idle');
 
   const mobileDeployments: MobileDeployment[] = [
     {
@@ -79,28 +73,15 @@ export default function MobilePage() {
 
   const currentDeployment = mobileDeployments.find(d => d.platform === selectedPlatform);
 
-  const handleDownload = async () => {
-    setIsDownloading(true);
-    setInstallStatus('downloading');
-    
-    // Simulate download progress
-    const interval = setInterval(() => {
-      setDownloadProgress(prev => {
-        if (prev >= 100) {
-          clearInterval(interval);
-          setInstallStatus('installing');
-          
-          // Simulate installation
-          setTimeout(() => {
-            setInstallStatus('installed');
-            setIsDownloading(false);
-          }, 2000);
-          
-          return 100;
-        }
-        return prev + 10;
-      });
-    }, 300);
+  const handleDownload = () => {
+    const url = currentDeployment?.downloadUrl;
+    if (url) {
+      window.open(url, '_blank', 'noopener,noreferrer');
+    }
+  };
+
+  const handleLearnMore = () => {
+    document.getElementById('app-features')?.scrollIntoView({ behavior: 'smooth' });
   };
 
   const handleShare = async () => {
@@ -250,46 +231,16 @@ export default function MobilePage() {
                 </CardDescription>
               </CardHeader>
               <CardContent className="space-y-6">
-                {/* Download Progress */}
-                {isDownloading && (
-                  <div className="space-y-2">
-                    <div className="flex justify-between text-sm text-gray-400">
-                      <span>
-                        {installStatus === 'downloading' ? 'Downloading...' : 'Installing...'}
-                      </span>
-                      <span>{downloadProgress}%</span>
-                    </div>
-                    <Progress value={downloadProgress} className="h-2" />
-                  </div>
-                )}
-
-                {/* Install Status */}
-                {installStatus === 'installed' && (
-                  <Alert>
-                    <CheckCircle className="h-4 w-4" />
-                    <AlertDescription>
-                      App installed successfully! You can now open Proximity from your home screen.
-                    </AlertDescription>
-                  </Alert>
-                )}
-
                 {/* Action Buttons */}
                 <div className="space-y-3">
                   <Button 
                     className="w-full bg-pink-600 hover:bg-pink-700 text-white"
                     onClick={handleDownload}
-                    disabled={isDownloading}
                   >
-                    {isDownloading ? (
-                      <span className="flex items-center gap-2">
-                        {installStatus === 'downloading' ? 'Downloading...' : 'Installing...'}
-                      </span>
-                    ) : (
-                      <span className="flex items-center gap-2">
-                        <Download className="w-4 h-4" />
-                        Download for {selectedPlatform === 'android' ? 'Android' : 'iOS'}
-                      </span>
-                    )}
+                    <span className="flex items-center gap-2">
+                      <Download className="w-4 h-4" />
+                      Download for {selectedPlatform === 'android' ? 'Android' : 'iOS'}
+                    </span>
                   </Button>
 
                   <Button 
@@ -306,7 +257,14 @@ export default function MobilePage() {
                 <div className="text-center">
                   <p className="text-sm text-gray-400 mb-3">Or scan QR code:</p>
                   <div className="bg-white p-4 rounded-lg inline-block">
-                    <QrCode className="w-32 h-32 text-black" />
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img
+                      src={currentDeployment?.qrCode ?? `/api/qr/${selectedPlatform}`}
+                      alt={`QR code to download the Proximity app for ${selectedPlatform === 'android' ? 'Android' : 'iOS'}`}
+                      width={128}
+                      height={128}
+                      className="w-32 h-32"
+                    />
                   </div>
                   <p className="text-xs text-gray-500 mt-2">
                     Point your camera to download
@@ -317,7 +275,7 @@ export default function MobilePage() {
           </div>
 
           {/* Features Grid */}
-          <div className="grid md:grid-cols-3 gap-6 mb-12">
+          <div id="app-features" className="grid md:grid-cols-3 gap-6 mb-12">
             <Card className="bg-black/70 backdrop-blur-sm border-gray-700 text-center">
               <CardContent className="pt-6">
                 <Zap className="w-12 h-12 text-yellow-500 mx-auto mb-4" />
@@ -406,11 +364,11 @@ export default function MobilePage() {
               Join thousands of users already enjoying the Proximity Dating App on their mobile devices.
             </p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
-              <Button size="lg" className="bg-pink-600 hover:bg-pink-700 text-white">
+              <Button size="lg" className="bg-pink-600 hover:bg-pink-700 text-white" onClick={handleDownload}>
                 <Users className="w-5 h-5 mr-2" />
                 Download Now
               </Button>
-              <Button size="lg" variant="outline" className="border-gray-600 text-gray-300 hover:bg-gray-700">
+              <Button size="lg" variant="outline" className="border-gray-600 text-gray-300 hover:bg-gray-700" onClick={handleLearnMore}>
                 <Heart className="w-5 h-5 mr-2" />
                 Learn More
               </Button>
