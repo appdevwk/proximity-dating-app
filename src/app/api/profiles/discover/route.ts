@@ -119,6 +119,7 @@ export async function GET(request: NextRequest) {
     const profiles: DiscoverProfile[] = slice.map((profile) => {
       let distanceMiles: number | null = null;
       if (
+        profile.showDistance !== false &&
         profile.latitude != null &&
         profile.longitude != null &&
         me.profile?.latitude != null &&

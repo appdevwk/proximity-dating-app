@@ -292,7 +292,8 @@ function ProfileCard({ profile }: { profile: DiscoverProfile }) {
           <p className="flex items-center text-sm text-gray-200 mt-1">
             <MapPin className="w-4 h-4 mr-1 text-pink-400" />
             {profile.location ? `${profile.location}` : 'Nearby'}
-            {profile.distanceMiles != null && ` • ${profile.distanceMiles} mi away`}
+            {profile.distanceMiles === 0 && ' • Less than a mile away'}
+            {profile.distanceMiles != null && profile.distanceMiles > 0 && ` • ${profile.distanceMiles} mi away`}
           </p>
         )}
         {profile.bio && <p className="text-sm text-gray-300 mt-2 line-clamp-3">{profile.bio}</p>}

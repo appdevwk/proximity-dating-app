@@ -65,6 +65,8 @@ export type ProfileOut = {
   gender: GenderValue;
   interestedIn: GenderValue[];
   location: string | null;
+  latitude: number | null;
+  longitude: number | null;
   profilePicture: string | null;
   isProfilePublic: boolean;
   showDistance: boolean;

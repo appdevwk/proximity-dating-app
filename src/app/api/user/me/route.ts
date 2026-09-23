@@ -20,6 +20,9 @@ const updateProfileSchema = z.object({
   gender: GENDER_ENUM.optional(),
   interestedIn: z.array(GENDER_ENUM).min(1).optional(),
   location: z.string().trim().max(120).nullable().optional(),
+  latitude: z.number().min(-90).max(90).nullable().optional(),
+  longitude: z.number().min(-180).max(180).nullable().optional(),
+  showDistance: z.boolean().optional(),
   profilePicture: z
     .string()
     .trim()
@@ -146,6 +149,16 @@ export async function PUT(request: NextRequest) {
             validated.profile.location !== undefined
               ? validated.profile.location
               : user.profile?.location,
+          latitude:
+            validated.profile.latitude !== undefined
+              ? validated.profile.latitude
+              : user.profile?.latitude,
+          longitude:
+            validated.profile.longitude !== undefined
+              ? validated.profile.longitude
+              : user.profile?.longitude,
+          showDistance:
+            validated.profile.showDistance ?? user.profile?.showDistance ?? true,
           profilePicture:
             validated.profile.profilePicture !== undefined
               ? validated.profile.profilePicture
@@ -159,6 +172,9 @@ export async function PUT(request: NextRequest) {
           interestedIn: validated.profile.interestedIn?.join(',') ?? 'MALE,FEMALE,NON_BINARY,OTHER',
           bio: validated.profile.bio ?? null,
           location: validated.profile.location ?? null,
+          latitude: validated.profile.latitude ?? null,
+          longitude: validated.profile.longitude ?? null,
+          showDistance: validated.profile.showDistance ?? true,
           profilePicture: validated.profile.profilePicture ?? null,
         },
       });
@@ -264,6 +280,8 @@ function toProfileOut(profile: {
   gender: string;
   interestedIn: string;
   location: string | null;
+  latitude: number | null;
+  longitude: number | null;
   profilePicture: string | null;
   isProfilePublic: boolean;
   showDistance: boolean;
@@ -279,6 +297,8 @@ function toProfileOut(profile: {
       .map((value) => value.trim().toUpperCase())
       .filter((value): value is GenderValue => GENDERS.includes(value as GenderValue)),
     location: profile.location,
+    latitude: profile.latitude,
+    longitude: profile.longitude,
     profilePicture: profile.profilePicture,
     isProfilePublic: profile.isProfilePublic,
     showDistance: profile.showDistance,

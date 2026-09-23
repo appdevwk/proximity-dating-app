@@ -12,7 +12,7 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/hooks/use-toast';
 import { useSession } from '@/hooks/use-session';
-import { Save, ArrowLeft, UserRound, Upload } from 'lucide-react';
+import { Save, ArrowLeft, UserRound, Upload, MapPin } from 'lucide-react';
 import { AdBanner } from '@/components/ad-manager';
 import type { GenderValue, UserMe } from '@/lib/types';
 
@@ -33,6 +33,8 @@ export default function ProfileEditPage() {
   const [gender, setGender] = useState<GenderValue>('OTHER');
   const [interestedIn, setInterestedIn] = useState<GenderValue[]>([]);
   const [location, setLocation] = useState('');
+  const [locating, setLocating] = useState(false);
+  const [showDistance, setShowDistance] = useState(true);
   const [profilePicture, setProfilePicture] = useState('');
   const [uploading, setUploading] = useState(false);
   const [relationshipType, setRelationshipType] = useState<string[]>([]);
@@ -59,6 +61,7 @@ export default function ProfileEditPage() {
         setGender(data.profile?.gender ?? 'OTHER');
         setInterestedIn(data.profile?.interestedIn ?? []);
         setLocation(data.profile?.location ?? '');
+        setShowDistance(data.profile?.showDistance ?? true);
         setProfilePicture(data.profile?.profilePicture ?? '');
         setRelationshipType(data.preferences?.relationshipType ?? []);
         setMinAge(data.preferences?.minAge ?? 18);
@@ -109,6 +112,66 @@ export default function ProfileEditPage() {
     }
   };
 
+  const saveMyLocation = async () => {
+    if (typeof navigator === 'undefined' || !navigator.geolocation) {
+      toast({
+        title: 'Location unavailable',
+        description: 'Your browser does not support location services. You can type your city above instead.',
+        variant: 'destructive',
+      });
+      return;
+    }
+    setLocating(true);
+    navigator.geolocation.getCurrentPosition(
+      async (position) => {
+        const { latitude, longitude } = position.coords;
+        try {
+          const response = await fetch('/api/user/location', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ latitude, longitude }),
+          });
+          if (response.status === 401) {
+            router.replace('/');
+            return;
+          }
+          const data = (await response.json().catch(() => null)) as {
+            location?: string | null;
+            error?: string;
+          } | null;
+          if (response.ok) {
+            if (data?.location) setLocation(data.location);
+            toast({ title: 'Location saved', description: "You'll now see nearby singles and distances." });
+          } else {
+            toast({
+              title: 'Could not save location',
+              description: data?.error ?? 'Please try again.',
+              variant: 'destructive',
+            });
+          }
+        } catch {
+          toast({ title: 'Network error', description: 'Please try again.', variant: 'destructive' });
+        } finally {
+          setLocating(false);
+        }
+      },
+      (error) => {
+        setLocating(false);
+        const messages: Record<number, string> = {
+          1: 'Location permission denied — you can still type your city above.',
+          2: 'Could not determine your location.',
+          3: 'Location request timed out.',
+        };
+        toast({
+          title: 'Location unavailable',
+          description: messages[error.code] ?? 'Could not get your location.',
+          variant: 'destructive',
+        });
+      },
+      { enableHighAccuracy: false, timeout: 10000, maximumAge: 300000 }
+    );
+  };
+
   const save = async () => {
     if (displayName.trim().length < 2) {
       toast({ title: 'Check your name', description: 'Display name must be at least 2 characters.', variant: 'destructive' });
@@ -135,6 +198,7 @@ export default function ProfileEditPage() {
             gender,
             interestedIn,
             location: location.trim() ? location.trim() : null,
+            showDistance,
             profilePicture: profilePicture.trim() ? profilePicture.trim() : null,
           },
           preferences: {
@@ -274,6 +338,26 @@ export default function ProfileEditPage() {
                 placeholder="City, State"
                 className="bg-gray-800 border-pink-950 text-white placeholder-gray-500"
               />
+              <Button
+                type="button"
+                onClick={() => void saveMyLocation()}
+                disabled={locating}
+                className="w-full bg-gradient-to-r from-pink-600 to-purple-600 hover:from-pink-700 hover:to-purple-700"
+              >
+                <MapPin className="w-4 h-4 mr-2" />
+                {locating ? 'Locating…' : 'Use my current location'}
+              </Button>
+              <p className="text-xs text-gray-500">
+                Your coordinates are stored privately. Only your city and distance are shown to other members.
+              </p>
+              <label className="flex items-center gap-3 text-sm text-gray-300 cursor-pointer pt-1">
+                <Checkbox
+                  checked={showDistance}
+                  onCheckedChange={(checked) => setShowDistance(checked === true)}
+                  className="border-pink-700 data-[state=checked]:bg-pink-600 data-[state=checked]:border-pink-600"
+                />
+                Show my distance to others
+              </label>
             </div>
 
             <div className="space-y-2">
