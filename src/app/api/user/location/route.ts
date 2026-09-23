@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db';
 import { getSessionUser } from '@/lib/auth';
-import { ipLatLng, clientIp } from '@/lib/geo';
+import { ipLatLng, clientIp, reverseGeocode } from '@/lib/geo';
 import { z } from 'zod';
 
 const locationSchema = z.object({
@@ -12,50 +12,6 @@ const locationSchema = z.object({
 const ipLocationSchema = z.object({
   useIpApproximate: z.literal(true),
 });
-
-type NominatimAddress = {
-  city?: string;
-  town?: string;
-  village?: string;
-  hamlet?: string;
-  county?: string;
-  state?: string;
-};
-
-async function reverseGeocode(latitude: number, longitude: number): Promise<string | null> {
-  try {
-    const controller = new AbortController();
-    const timer = setTimeout(() => controller.abort(), 8000);
-    try {
-      const url = `https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${latitude}&lon=${longitude}&zoom=10&addressdetails=1`;
-      const response = await fetch(url, {
-        headers: {
-          'User-Agent': 'proximitygetadate-app/1.0 (contact: support@proximitygetadate.site)',
-          'Accept-Language': 'en',
-        },
-        signal: controller.signal,
-      });
-      if (!response.ok) return null;
-      const data = (await response.json()) as { address?: NominatimAddress };
-      const address = data.address;
-      if (!address) return null;
-
-      const cityPart =
-        address.city ?? address.town ?? address.village ?? address.hamlet ?? address.county ?? null;
-      const statePart = address.state ?? null;
-
-      if (cityPart && statePart) return `${cityPart}, ${statePart}`;
-      if (cityPart) return cityPart;
-      if (statePart) return statePart;
-      return null;
-    } finally {
-      clearTimeout(timer);
-    }
-  } catch {
-    // Geocoding is best-effort: coordinates still get saved even if this fails.
-    return null;
-  }
-}
 
 export async function POST(request: NextRequest) {
   try {
@@ -96,9 +52,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'User not found' }, { status: 404 });
     }
 
-    const [geocodedLocation] = await Promise.all([
-      reverseGeocode(latitude, longitude),
-    ]);
+    const geocodedLocation = await reverseGeocode(latitude, longitude);
 
     const resolvedLocation = geocodedLocation ?? me.profile?.location ?? null;
 

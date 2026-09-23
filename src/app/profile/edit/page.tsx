@@ -150,6 +150,31 @@ export default function ProfileEditPage() {
     }
   };
 
+  const applyPosition = async (position: GeolocationPosition) => {
+    const { latitude, longitude } = position.coords;
+    try {
+      await persistLocation({ latitude, longitude });
+    } catch {
+      toast({ title: 'Network error', description: 'Please try again.', variant: 'destructive' });
+    } finally {
+      setLocating(false);
+    }
+  };
+
+  const showGeoError = (error: GeolocationPositionError, isHighAccuracyAttempt: boolean) => {
+    const messages: Record<number, string> = {
+      1: 'Location permission denied — you can still type your city above.',
+      2: 'Could not determine your location.',
+      3: 'Location request timed out.',
+    };
+    toast({
+      title: 'Location unavailable',
+      description: messages[error.code] ?? 'Could not get your location.',
+      variant: 'destructive',
+    });
+    if (!isHighAccuracyAttempt) setLocating(false);
+  };
+
   const saveMyLocation = async () => {
     if (typeof navigator === 'undefined' || !navigator.geolocation) {
       toast({
@@ -160,32 +185,24 @@ export default function ProfileEditPage() {
       return;
     }
     setLocating(true);
-    navigator.geolocation.getCurrentPosition(
-      async (position) => {
-        const { latitude, longitude } = position.coords;
-        try {
-          await persistLocation({ latitude, longitude });
-        } catch {
-          toast({ title: 'Network error', description: 'Please try again.', variant: 'destructive' });
-        } finally {
-          setLocating(false);
-        }
-      },
-      (error) => {
-        setLocating(false);
-        const messages: Record<number, string> = {
-          1: 'Location permission denied — you can still type your city above.',
-          2: 'Could not determine your location.',
-          3: 'Location request timed out.',
-        };
-        toast({
-          title: 'Location unavailable',
-          description: messages[error.code] ?? 'Could not get your location.',
-          variant: 'destructive',
-        });
-      },
-      { enableHighAccuracy: false, timeout: 10000, maximumAge: 300000 }
-    );
+    // High-accuracy fix first; fall back to the faster, battery-friendly fix
+    // if the precise one times out or is temporarily unavailable.
+    const requestFix = (highAccuracy: boolean) => {
+      navigator.geolocation.getCurrentPosition(
+        async (position) => void applyPosition(position),
+        (error) => {
+          if (highAccuracy && (error.code === 2 || error.code === 3)) {
+            requestFix(false);
+            return;
+          }
+          showGeoError(error, highAccuracy);
+        },
+        highAccuracy
+          ? { enableHighAccuracy: true, timeout: 5000, maximumAge: 60000 }
+          : { enableHighAccuracy: false, timeout: 10000, maximumAge: 300000 }
+      );
+    };
+    requestFix(true);
   };
 
   const save = async () => {

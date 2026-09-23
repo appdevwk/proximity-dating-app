@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db';
 import { getSessionUser } from '@/lib/auth';
-import { ageFromDateOfBirth, haversineMiles, ipLatLng, clientIp, type IpLocation } from '@/lib/geo';
+import { ageFromDateOfBirth, haversineMiles, ipLatLng, clientIp, placeNameFor, type IpLocation } from '@/lib/geo';
 import { requiresVerification, verificationRequiredResponse } from '@/lib/verification';
 import type { DiscoverProfile } from '@/lib/types';
 
@@ -134,6 +134,20 @@ export async function GET(request: NextRequest) {
     }
 
     const slice = filtered.slice(offset, offset + limit);
+
+    // Backfill missing place names for coords-bearing profiles, capped and
+    // sequential so one deck request stays well under Nominatim's 1 req/s.
+    const GEOCODE_CAP = 5;
+    let geocoded = 0;
+    for (const profile of slice) {
+      if (geocoded >= GEOCODE_CAP) break;
+      if (profile.location || profile.latitude == null || profile.longitude == null) continue;
+      const placeName = await placeNameFor(profile.latitude, profile.longitude);
+      if (placeName) {
+        profile.location = placeName;
+        geocoded += 1;
+      }
+    }
 
     const profiles: DiscoverProfile[] = slice.map((profile) => {
       let distanceMiles: number | null = null;

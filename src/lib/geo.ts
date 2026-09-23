@@ -70,3 +70,58 @@ export function clientIp(request: Request): string | null {
   if (forwarded) return forwarded;
   return request.headers.get('x-real-ip')?.trim() ?? null;
 }
+
+type NominatimAddress = {
+  city?: string;
+  town?: string;
+  village?: string;
+  hamlet?: string;
+  county?: string;
+  state?: string;
+};
+
+export async function reverseGeocode(latitude: number, longitude: number): Promise<string | null> {
+  try {
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), 8000);
+    try {
+      const url = `https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${latitude}&lon=${longitude}&zoom=10&addressdetails=1`;
+      const response = await fetch(url, {
+        headers: {
+          'User-Agent': 'proximitygetadate-app/1.0 (contact: support@proximitygetadate.site)',
+          'Accept-Language': 'en',
+        },
+        signal: controller.signal,
+      });
+      if (!response.ok) return null;
+      const data = (await response.json()) as { address?: NominatimAddress };
+      const address = data.address;
+      if (!address) return null;
+
+      const cityPart =
+        address.city ?? address.town ?? address.village ?? address.hamlet ?? address.county ?? null;
+      const statePart = address.state ?? null;
+
+      if (cityPart && statePart) return `${cityPart}, ${statePart}`;
+      if (cityPart) return cityPart;
+      if (statePart) return statePart;
+      return null;
+    } finally {
+      clearTimeout(timer);
+    }
+  } catch {
+    return null;
+  }
+}
+
+// Per-instance cache: keeps the deck off Nominatim's 1 req/s rate limit.
+const placeNameCache = new Map<string, string>();
+
+export async function placeNameFor(latitude: number, longitude: number): Promise<string | null> {
+  const key = `${latitude.toFixed(4)},${longitude.toFixed(4)}`;
+  const cached = placeNameCache.get(key);
+  if (cached) return cached;
+  const name = await reverseGeocode(latitude, longitude);
+  if (name) placeNameCache.set(key, name);
+  return name;
+}
