@@ -86,10 +86,12 @@ model User {
   media           Media[]
   adSessions      AdSession[]
   adViews         AdView[]
-  payments        Payment[]
+  payments             Payment[]
   crossPostSubscriptions CrossPostSubscription[]
-  devices         Device[]
-  pushNotifications PushNotification[]
+  appSubscriptions       AppSubscription[]
+  appUsage               AppUsage[]
+  devices                Device[]
+  pushNotifications      PushNotification[]
 
   @@map("users")
 }
@@ -499,6 +501,72 @@ model CrossPostSubmission {
   target         CrossPostTarget       @relation(fields: [targetId], references: [id])
 
   @@map("cross_post_submissions")
+}
+
+// =============================================
+// App Subscription Models (4-tier monetization)
+// =============================================
+model AppPlan {
+  id             String   @id @default(cuid())
+  name           String
+  slug           String   @unique
+  price          Float
+  currency       String   @default("USD")
+  interval       String   @default("MONTHLY")
+  tier           Int      // 0=Free, 1=Basic, 2=Pro, 3=VR Elite
+  description    String
+  features       String   // JSON string of features
+  active         Boolean  @default(true)
+  sortOrder      Int      @default(0)
+  stripePriceId  String?  // Stripe recurring Price ID (created lazily)
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  // Relations
+  subscriptions  AppSubscription[]
+
+  @@map("app_plans")
+}
+
+model AppSubscription {
+  id               String           @id @default(cuid())
+  userId           String
+  planId           String
+  status           SubscriptionStatus @default(ACTIVE)
+  provider         String           @default("AD_CREDITS") // AD_CREDITS | STRIPE
+  stripeCustomerId String?
+  stripeSubId      String?          @unique
+  startDate        DateTime         @default(now())
+  endDate          DateTime?
+  autoRenew        Boolean          @default(false)
+  cancelAtPeriodEnd Boolean         @default(false)
+  createdAt        DateTime         @default(now())
+  updatedAt        DateTime         @updatedAt
+
+  // Relations
+  user             User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  plan             AppPlan          @relation(fields: [planId], references: [id])
+
+  @@unique([userId, planId])
+  @@map("app_subscriptions")
+}
+
+model AppUsage {
+  id              String   @id @default(cuid())
+  userId          String
+  periodStart     DateTime @default(now())
+  periodEnd       DateTime
+  imagesGenerated Int      @default(0)
+  adsWatched      Int      @default(0)
+  vrSessions      Int      @default(0)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  // Relations
+  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, periodStart])
+  @@map("app_usage")
 }
 
 enum SubscriptionStatus {

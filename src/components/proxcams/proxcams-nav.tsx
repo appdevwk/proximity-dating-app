@@ -2,10 +2,9 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
-import { usePathname } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
 import {
   Clapperboard,
-  Radio,
   Menu,
   X,
   Users,
@@ -13,7 +12,8 @@ import {
   Sparkles,
   ExternalLink,
   Flame,
-  Crown,
+  Search,
+  Video,
 } from 'lucide-react';
 import { useSiteMode } from '@/components/site-mode-provider';
 import { CAM_CATEGORIES, PARTNER_JOIN_URL } from '@/lib/proxcams-data';
@@ -22,9 +22,18 @@ import type { LucideIcon } from 'lucide-react';
 
 export function ProxCamsNav() {
   const pathname = usePathname();
+  const router = useRouter();
   const [mobileOpen, setMobileOpen] = useState(false);
+  const [query, setQuery] = useState('');
   const { effectiveMode } = useSiteMode();
   const adult = effectiveMode === 'adult';
+
+  const submitSearch = (e: React.FormEvent) => {
+    e.preventDefault();
+    const q = query.trim();
+    router.push(q ? `/proxcams?q=${encodeURIComponent(q)}` : '/proxcams');
+    setMobileOpen(false);
+  };
 
   const links: { href: string; label: string; icon: LucideIcon; adult: boolean }[] = [
     { href: '/proxcams', label: 'Featured', icon: Flame, adult: true },
@@ -97,6 +106,20 @@ export function ProxCamsNav() {
           </nav>
 
           <div className="flex items-center gap-2">
+            <form
+              onSubmit={submitSearch}
+              className="hidden items-center gap-1.5 rounded-md border border-white/10 bg-white/5 px-2.5 py-1.5 focus-within:border-rose-400/50 lg:flex"
+            >
+              <Search className="h-3.5 w-3.5 text-white/40" />
+              <input
+                type="search"
+                value={query}
+                onChange={(e) => setQuery(e.target.value)}
+                placeholder="Search cams…"
+                aria-label="Search cams"
+                className="w-36 bg-transparent text-[13px] font-semibold text-white placeholder:text-white/40 focus:outline-none"
+              />
+            </form>
             <a
               href={PARTNER_JOIN_URL}
               target="_blank"
@@ -105,6 +128,15 @@ export function ProxCamsNav() {
             >
               <Sparkles className="h-3.5 w-3.5" />
               Join Cams
+            </a>
+            <a
+              href={PARTNER_JOIN_URL}
+              target="_blank"
+              rel="noopener noreferrer nofollow"
+              className="hidden items-center gap-1.5 rounded-md border border-rose-500/40 bg-rose-500/10 px-3 py-2 text-[12px] font-black uppercase tracking-wide text-rose-300 hover:bg-rose-500/20 md:flex"
+            >
+              <Video className="h-3.5 w-3.5" />
+              Broadcast
             </a>
             <button
               type="button"
@@ -120,6 +152,20 @@ export function ProxCamsNav() {
 
       {mobileOpen && (
         <div className="border-t border-white/10 px-4 pb-4 pt-2 md:hidden">
+          <form
+            onSubmit={submitSearch}
+            className="mb-2 flex items-center gap-1.5 rounded-md border border-white/10 bg-white/5 px-2.5 py-2 focus-within:border-rose-400/50"
+          >
+            <Search className="h-4 w-4 text-white/40" />
+            <input
+              type="search"
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+              placeholder="Search cams…"
+              aria-label="Search cams"
+              className="w-full bg-transparent text-[14px] font-semibold text-white placeholder:text-white/40 focus:outline-none"
+            />
+          </form>
           <div className="flex flex-col gap-1">
             {links.map((link) => (
               <Link

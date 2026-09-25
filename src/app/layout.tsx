@@ -4,7 +4,7 @@ import { Toaster } from "@/components/ui/toaster";
 import { AdManager } from '@/components/ad-manager';
 import { SiteModeProvider } from '@/components/site-mode-provider';
 import { SiteFooter } from '@/components/site-footer';
-import { siteConfig, AD_SENSE_CLIENT_ID } from '@/lib/site-config';
+import { siteConfig } from '@/lib/site-config';
 
 const { title, description, keywords } = siteConfig;
 
@@ -65,8 +65,6 @@ if ('serviceWorker' in navigator) {
 }`,
           }}
         />
-        <script async src={`https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=${AD_SENSE_CLIENT_ID}`}
-          crossOrigin="anonymous" />
       </head>
       <body
         className="font-sans antialiased"

@@ -18,12 +18,14 @@ import { CamCard } from '@/components/proxcams/cam-card';
 import {
   CAM_CATEGORIES,
   CAM_ROOMS,
+  CAM_TAGS,
   joinUrlForCategory,
   PARTNER_JOIN_URL,
 } from '@/lib/proxcams-data';
 import { cn } from '@/lib/utils';
 
 type Tab = 'all' | (typeof CAM_CATEGORIES)[number]['key'];
+type SortMode = 'viewers' | 'new' | 'trending';
 
 export default function ProxCamsLandingPage() {
   const { effectiveMode } = useSiteMode();
@@ -31,6 +33,9 @@ export default function ProxCamsLandingPage() {
 
   const [tab, setTab] = useState<Tab>('all');
   const [region, setRegion] = useState('all');
+  const [tag, setTag] = useState('all');
+  const [sort, setSort] = useState<SortMode>('viewers');
+  const [query, setQuery] = useState('');
 
   useEffect(() => {
     if (typeof window === 'undefined') return;
@@ -41,6 +46,8 @@ export default function ProxCamsLandingPage() {
     }
     const reg = params.get('region');
     if (reg && reg.length > 0 && reg !== 'all') setRegion(reg);
+    const q = params.get('q');
+    if (q && q.length > 0) setQuery(q);
   }, []);
 
   const rosters = useMemo(() => {
@@ -60,8 +67,22 @@ export default function ProxCamsLandingPage() {
   const visible = useMemo(() => {
     let list = rosters[tab] ?? rosters.all;
     if (region !== 'all') list = list.filter((c) => c.region === region);
+    if (tag !== 'all') list = list.filter((c) => c.tags.includes(tag));
+    if (query.trim()) {
+      const q = query.trim().toLowerCase();
+      list = list.filter(
+        (c) =>
+          c.name.toLowerCase().includes(q) ||
+          c.bio.toLowerCase().includes(q) ||
+          c.tags.some((t) => t.toLowerCase().includes(q))
+      );
+    }
+    if (sort === 'new') list = [...list].sort((a, b) => Number(b.isNew) - Number(a.isNew) || b.viewers - a.viewers);
+    else if (sort === 'trending')
+      list = [...list].sort((a, b) => Number(b.trending) - Number(a.trending) || b.viewers - a.viewers);
+    else list = [...list].sort((a, b) => b.viewers - a.viewers);
     return list;
-  }, [rosters, tab, region]);
+  }, [rosters, tab, region, tag, sort, query]);
 
   const topRoom = CAM_ROOMS[0];
   const liveStrip = CAM_ROOMS.filter((c) => c.trending || c.isNew).slice(0, 12);
@@ -191,7 +212,64 @@ export default function ProxCamsLandingPage() {
               </button>
             ))}
           </div>
+          <div className="flex items-center gap-1 rounded-lg bg-white/5 p-1">
+            {(
+              [
+                { key: 'viewers', label: 'Most Viewed' },
+                { key: 'new', label: 'New' },
+                { key: 'trending', label: 'Trending' },
+              ] as { key: SortMode; label: string }[]
+            ).map((s) => (
+              <button
+                key={s.key}
+                onClick={() => setSort(s.key)}
+                className={cn(
+                  'rounded-md px-3 py-1.5 text-xs font-bold transition-colors',
+                  sort === s.key ? 'bg-rose-600 text-white' : 'text-rose-200 hover:bg-white/10'
+                )}
+              >
+                {s.label}
+              </button>
+            ))}
+          </div>
         </div>
+
+        <div className="mb-4 flex flex-wrap items-center gap-1.5">
+          <button
+            onClick={() => setTag('all')}
+            className={cn(
+              'rounded-full px-2.5 py-1 text-[11px] font-bold transition-colors',
+              tag === 'all'
+                ? 'bg-rose-600 text-white'
+                : 'bg-white/5 text-rose-200 hover:bg-white/10'
+            )}
+          >
+            All Tags
+          </button>
+          {CAM_TAGS.slice(0, 24).map((t) => (
+            <button
+              key={t.tag}
+              onClick={() => setTag(tag === t.tag ? 'all' : t.tag)}
+              className={cn(
+                'rounded-full px-2.5 py-1 text-[11px] font-bold transition-colors',
+                tag === t.tag
+                  ? 'bg-rose-600 text-white'
+                  : 'bg-white/5 text-rose-200 hover:bg-white/10'
+              )}
+            >
+              {t.tag} <span className="opacity-60">({t.count})</span>
+            </button>
+          ))}
+        </div>
+
+        {query.trim() && (
+          <p className="mb-3 text-xs font-bold text-rose-200">
+            Showing results for “{query.trim()}” —{' '}
+            <button onClick={() => setQuery('')} className="underline hover:text-white">
+              clear search
+            </button>
+          </p>
+        )}
 
         {!adult ? (
           <div className="rounded-2xl border border-white/10 bg-white/5 py-16 text-center">

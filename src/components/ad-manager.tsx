@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useCallback } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { AD_SENSE_CLIENT_ID, EXOCLICK_ZONE_ID } from '@/lib/site-config';
 import { useSiteMode } from '@/components/site-mode-provider';
 
@@ -19,6 +19,24 @@ function ExoClickFrame({ zone, width = '100%', height = '90px' }: { zone: string
 }
 
 export function AdManager() {
+  const [loaded, setLoaded] = useState(false);
+
+  useEffect(() => {
+    if (loaded || typeof window === 'undefined') return;
+    const existing = document.querySelector('script[data-ad-sense]');
+    if (existing) {
+      setLoaded(true);
+      return;
+    }
+    const script = document.createElement('script');
+    script.async = true;
+    script.src = `https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=${AD_SENSE_CLIENT_ID}`;
+    script.crossOrigin = 'anonymous';
+    script.dataset.adSense = 'true';
+    script.onload = () => setLoaded(true);
+    document.head.appendChild(script);
+  }, [loaded]);
+
   return null;
 }
 
